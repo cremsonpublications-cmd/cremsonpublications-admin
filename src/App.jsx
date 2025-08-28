@@ -1,11 +1,16 @@
-import "/src/styles/global.scss";
-function App() {
+import { Routes, Route} from "react-router-dom";
 
+import "/src/styles/global.scss";
+import Home from "./pages/Home/Home";
+
+function App() {
   return (
     <>
-    app
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
