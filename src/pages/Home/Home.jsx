@@ -1,10 +1,13 @@
-import "./home.scss"
+import AdHeader from "../../components/AdHeader/AdHeader";
+import { adHeaderSectionDetailsContent } from "../../constants/adHeaderContent";
+
+import "./home.scss";
 const Home = () => {
   return (
-    <div>
-      Home
-    </div>
-  )
-}
+    <>
+      <AdHeader shippingData={adHeaderSectionDetailsContent}/>
+    </>
+  );
+};
 
-export default Home
+export default Home;
