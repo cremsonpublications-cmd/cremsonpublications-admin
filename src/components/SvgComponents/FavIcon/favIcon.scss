@@ -1,0 +1,11 @@
+@use "/src/styles/variable.scss" as variable;
+
+.favIcon {
+  cursor: pointer;
+
+  &:hover {
+    path {
+      fill: variable.$bg-white-primary !important;
+    }
+  }
+}

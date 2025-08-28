@@ -1,0 +1,63 @@
+@use "/src/styles/variable.scss" as variable;
+.navHeader {
+  background-color: variable.$bg-red-primary;
+
+  .navHeaderContainer {
+    @include variable.d-flex($al: center, $jc: space-between);
+    padding: 15px 120px;
+    .logo {
+      .imageWrapper {
+        width: 175px;
+      }
+    }
+    .navContainer {
+      @include variable.d-flex($al: center);
+      gap: 36px;
+
+      span {
+        @include variable.font-style($fs: 20px, $fw: 400);
+        color: variable.$text-white-primary;
+        letter-spacing: -0.6px;
+      }
+    }
+
+    .actions {
+      @include variable.d-flex($al: center);
+      gap: 20px;
+    }
+  }
+}
+@media screen and (max-width: 1100px) {
+  .navHeader {
+    .navHeaderContainer {
+      padding: 18px 80px;
+    }
+  }
+}
+@media screen and (max-width: 992px) {
+  .navHeader {
+    .navHeaderContainer {
+      padding: 18px 60px;
+    }
+  }
+}
+@media screen and (max-width: 568px) {
+  .navHeader {
+    .navHeaderContainer {
+      padding: 18px 20px;
+      .logo {
+        .imageWrapper {
+          width: 125px;
+        }
+      }
+      .actions {
+        .favIcon {
+          width: 36px;
+        }
+        .cartIcon {
+          width: 36px;
+        }
+      }
+    }
+  }
+}
