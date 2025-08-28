@@ -1,0 +1,104 @@
+@use "/src/styles/variable.scss" as variable;
+.footer {
+  background-color: variable.$bg-red-primary;
+  padding: 100px 120px 20px 120px;
+  color: variable.$text-white-primary;
+
+  .footerContainer {
+    width: 100%;
+    @include variable.d-flex($fd: column);
+    gap: 80px;
+    .mainFooter {
+      width: 100%;
+      @include variable.d-flex($jc: space-between);
+
+      .addressContainer {
+        @include variable.d-flex($fd: column);
+        gap: 30px;
+        .logo {
+          .imageWrapper {
+            width: 175px;
+          }
+        }
+        .addressDetail {
+          @include variable.d-flex($fd: column);
+          gap: 20px;
+          h3 {
+            color: variable.$text-white-secondary;
+            @include variable.font-style($fs: 24px, $fw: 600, $lh: 40px);
+            letter-spacing: -0.96px;
+          }
+          .details {
+            @include variable.d-flex($fd: column);
+            span {
+              color: variable.$text-white-primary;
+              @include variable.font-style($fs: 20px, $fw: 400, $lh: 26px);
+              letter-spacing: -0.8px;
+              &:first-child {
+                font-weight: 600;
+              }
+            }
+          }
+        }
+        .contactDetails {
+          @include variable.d-flex($fd: column);
+          gap: 18px;
+          .contactItem {
+            .title {
+              color: variable.$text-white-secondary;
+              @include variable.font-style($fs: 24px, $fw: 600, $lh: 40px);
+              letter-spacing: -0.96px;
+            }
+            .content {
+              color: variable.$text-white-primary;
+              @include variable.font-style($fs: 20px, $fw: 500, $lh: 26px);
+              letter-spacing: -0.8px;
+            }
+          }
+        }
+      }
+      .navContainer {
+        @include variable.d-flex();
+        gap: 82px;
+
+        .linkContainer {
+          @include variable.d-flex($fd: column);
+          gap: 31px;
+
+          .linksItemContainer {
+            @include variable.d-flex($fd: column);
+            gap: 15px;
+          }
+        }
+        .bankDetailContainer {
+          @include variable.d-flex($fd: column);
+          gap: 31px;
+
+          .bankDetailItemContainer {
+            @include variable.d-flex($fd: column);
+          }
+        }
+        .helpContainer {
+          @include variable.d-flex($fd: column);
+          gap: 31px;
+
+          .helptemContainer {
+            @include variable.d-flex($fd: column);
+            gap: 15px;
+          }
+        }
+      }
+    }
+    .bottomFooter {
+      width: 100%;
+      border-top: 1px solid variable.$footer-border-top;
+      padding-top: 20px;
+      @include variable.d-flex($jc: space-between);
+
+      .socialMediaContainer {
+        @include variable.d-flex();
+        gap: 12px;
+      }
+    }
+  }
+}
