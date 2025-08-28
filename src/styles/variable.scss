@@ -3,6 +3,11 @@ $text-gray-primary: #3b3939;
 
 $text-red-primary: #B0112D;
 
+$text-white-primary: #fff;
+
+$bg-white-primary: #fff;
+$bg-red-primary: #B0112D;
+
 // mixin
 @mixin d-flex($jc: flex-start, $al: flex-start, $fd: row) {
   display: flex;
