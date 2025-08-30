@@ -1,0 +1,13 @@
+@use "/src/styles/variable.scss" as variable;
+
+.orangeXl {
+  @include variable.font-style($fs: 22px, $fw: 600);
+  background-color: variable.$bg-orange-primary;
+  border: none;
+  outline: none;
+  color: variable.$text-white-primary;
+  text-align: center;
+  letter-spacing: -0.44px;
+  padding: 18px 76px;
+  border-radius: 40px;
+}
