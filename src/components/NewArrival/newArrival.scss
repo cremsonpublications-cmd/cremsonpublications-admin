@@ -2,12 +2,12 @@
 
 .newArrival {
   .newArrivalContainer {
-   
     padding: 0 120px 120px 120px;
-
-    .topSection {
-       @include variable.d-flex($fd: column, $al: center);
+    @include variable.d-flex($fd: column, $al: center);
     gap: 60px;
+    .topSection {
+      @include variable.d-flex($fd: column, $al: center);
+      gap: 60px;
       .titleContainer {
         max-width: 1200px;
         @include variable.d-flex($fd: column, $al: center);

@@ -78,6 +78,31 @@ export default function App() {
   const hideLayout =
     location.pathname.startsWith("/admin") || location.pathname === "/login";
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase.from("categories").select("*");
+      if (error) {
+        console.error(error);
+      } else {
+        console.log(data, "zzzzzzz");
+      }
+    };
+
+    fetchCategories();
+  }, []);
+  useEffect(() => {
+    const fetchProduct = async () => {
+      const { data, error } = await supabase.from("products").select("*");
+      if (error) {
+        console.error(error);
+      } else {
+        console.log(data, "xxxxxx");
+      }
+    };
+
+    fetchProduct();
+  }, []);
+
   return (
     <div className="">
       {!hideLayout && <AdHeader shippingData={adHeaderSectionDetailsContent} />}

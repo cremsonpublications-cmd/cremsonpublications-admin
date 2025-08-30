@@ -3,9 +3,11 @@ import "./newArrival.scss";
 import productData from "../../data/prodcts";
 import TabButton from "../UiCompnents/TabButton/TabButton";
 import ProductCard from "../UiCompnents/ProductCard/ProductCard";
+import CommonButton from "../UiCompnents/CommonButton/CommonButton";
 const NewArrival = () => {
   const [productList, setProductList] = useState([]);
   const [activeTab, setActiveTab] = useState("All"); // ✅ Track active tab
+  const [visibleCount, setVisibleCount] = useState(6);
   useEffect(() => {
     const storedProduct = localStorage.getItem("products");
     if (!storedProduct) {
@@ -24,6 +26,17 @@ const NewArrival = () => {
 
   const handleTabClick = (tabName) => {
     setActiveTab(tabName); // ✅ Set active tab when clicked
+  };
+
+  const filteredProducts =
+    activeTab === "All"
+      ? productList
+      : productList.filter((item) => item.type === activeTab);
+
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+
+  const handleViewMore = () => {
+    setVisibleCount((prev) => prev + 6); // ✅ Load next 6 items
   };
 
   return (
@@ -54,7 +67,7 @@ const NewArrival = () => {
                 ))}
               </div>
               <div className="cardSection">
-                {productList.map((item) => (
+                {visibleProducts.map((item) => (
                   <ProductCard
                     id={item.id}
                     image={item.image}
@@ -69,6 +82,11 @@ const NewArrival = () => {
               </div>
             </div>
           </div>
+          {visibleCount < filteredProducts.length && (
+            <div className="viewMoreButton" onClick={handleViewMore}>
+              <CommonButton buttonText="View More" />
+            </div>
+          )}
         </div>
       </div>
     </>
