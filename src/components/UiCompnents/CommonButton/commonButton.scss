@@ -10,4 +10,9 @@
   letter-spacing: -0.44px;
   padding: 18px 76px;
   border-radius: 40px;
+
+  @media screen and (max-width: 568px){
+      @include variable.font-style($fs: 18px, $fw: 600);
+    padding: 10px 26px;
+  }
 }

@@ -1,14 +1,13 @@
 @use "/src/styles/variable.scss" as variable;
 
-.giftBoxyCarousel {
-  .giftBoxyCarouselContainer {
+.giftBoxCarousel {
+  .giftBoxCarouselContainer {
     .giftBoxSildeContainer {
       @include variable.d-flex();
-              background-color: variable.$text-orange-primary;
+      background-color: variable.$text-orange-primary;
 
       .imageSection {
         width: 50%;
-        
       }
       .contentWrapper {
         padding: 70px 0 0 87px;
@@ -89,4 +88,184 @@
       }
     }
   }
+}
+
+@media screen and (max-width: 1050px) {
+  .giftBoxCarousel {
+    .giftBoxCarouselContainer {
+      .giftBoxSildeContainer {
+        flex-direction: column;
+        align-items: center;
+        .imageSection {
+          height: 100%;
+          .imageWrapper {
+            height: 100%;
+          }
+        }
+        .contentWrapper {
+          padding: 40px 20px 0 20px;
+
+          .textContainer {
+            .mainContent {
+              .cardHeader {
+                .title {
+                  width: 100%;
+                  h1 {
+                    @include variable.font-style(
+                      $fs: 38px,
+                      $fw: 600,
+                      $lh: 48px
+                    );
+                  }
+                }
+                p {
+                  text-align: left;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+@media screen and (max-width: 992px) {
+  .giftBoxCarousel {
+    .giftBoxCarouselContainer {
+      .giftBoxSildeContainer {
+        flex-direction: column;
+        align-items: center;
+        .imageSection {
+          width: 75%;
+          height: 100%;
+          .imageWrapper {
+            height: 100%;
+          }
+        }
+        .contentWrapper {
+          padding: 40px 20px 0 20px;
+          width: 75%;
+        
+          .textContainer {
+          
+            .mainContent {
+              .cardHeader {
+                .title {
+                  width: 100%;
+                  h1 {
+                    @include variable.font-style(
+                      $fs: 38px,
+                      $fw: 600,
+                      $lh: 48px
+                    );
+                  }
+                }
+                p {
+                  text-align: left;
+                }
+              }
+            }
+          }
+          .buttonContainer{
+            width: 100%;
+          }
+        }
+      }
+    }
+  }
+}
+@media screen and (max-width: 568px) {
+  .giftBoxCarousel {
+    .giftBoxCarouselContainer {
+      .giftBoxSildeContainer {
+        .imageSection {
+          width: 100%;
+          .imageWrapper {
+            height: 100%;
+          }
+        }
+        .contentWrapper {
+          padding: 40px 20px 0 20px;
+          width: 100%;
+            gap: 20px;
+          .textContainer {
+              gap: 30px;
+            .mainContent {
+              .cardHeader {
+                .title {
+                  width: 100%;
+                  h1 {
+                    @include variable.font-style(
+                      $fs: 28px,
+                      $fw: 500,
+                      $lh: 28px
+                    );
+                  }
+                  
+                }
+               p{
+                    font-size: 17px;
+                  }
+              }
+            }
+            .priceContainer{
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Move the dots above the image or wherever you want */
+.giftBoxCarousel .control-dots {
+  bottom: 20px; /* Change this value to move up or down */
+  text-align: left; /* or center / right */
+  left: 20%; /* Move horizontally if needed */
+}
+
+@media screen and (max-width: 1050px) {
+  .giftBoxCarousel .control-dots {
+    top: 39%;
+    text-align: left; /* or center / right */
+    left: 45%; /* Move horizontally if needed */
+  }
+}
+@media screen and (max-width: 992px) {
+  .giftBoxCarousel .control-dots {
+    top: 42%;
+    text-align: left; /* or center / right */
+    left: 45%; /* Move horizontally if needed */
+  }
+}
+@media screen and (max-width: 568px) {
+  .giftBoxCarousel .control-dots {
+    top: 30.5%;
+    text-align: left; /* or center / right */
+    left: 36%; /* Move horizontally if needed */
+  }
+}
+
+.giftBoxCarousel .customArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  width: 54px;
+  height: 53px;
+}
+@media screen and (max-width: 568px) {
+  .giftBoxCarousel .customArrow {
+    top: 15%;
+  }
+}
+.giftBoxCarousel .customArrowNext {
+  right: 5%;
+}
+.giftBoxCarousel .customArrowPrev {
+  left: 5%;
 }
