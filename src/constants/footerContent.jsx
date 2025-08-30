@@ -95,5 +95,5 @@ export const footerContact = [
 ];
 export const emailContact = {
   title: "Email:",
-  content: "arjunfireworks@gmail.com",
+  content: " arjunfireworks@gmail.com",
 };
