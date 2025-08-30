@@ -4,7 +4,7 @@ const Banner = () => {
   return (
     <>
       <section className="banner">
-        <div className="container bannerContainer">
+        <div className="containerLocal bannerContainer">
             <div className="imageWrapper">
                 <img src={banner} alt="Banner" />
             </div>

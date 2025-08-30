@@ -12,7 +12,7 @@ const NavHeader = () => {
   return (
     <>
       <section className="navHeader">
-        <div className="container navHeaderContainer">
+        <div className="containerLocal navHeaderContainer">
           <div className="logo">
             <div className="imageWrapper">
               <img src={logo} alt="logo" />

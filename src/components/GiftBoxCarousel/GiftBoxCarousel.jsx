@@ -12,7 +12,7 @@ const GiftBoxCarousel = () => {
   return (
     <>
       <section className="giftBoxCarousel">
-        <div className="container giftBoxCarouselContainer">
+        <div className="containerLocal giftBoxCarouselContainer">
           <Carousel
             showThumbs={false} // Hide thumbnails
             showStatus={false} // Hide status (e.g., 1/3)

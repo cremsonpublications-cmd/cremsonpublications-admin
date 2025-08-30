@@ -16,7 +16,7 @@ const Footer = () => {
   return (
     <>
       <section className="footer">
-        <div className="container footerContainer">
+        <div className="containerLocal footerContainer">
           <div className="mainFooter">
             <div className="addressContainer">
               <div className="logo">
