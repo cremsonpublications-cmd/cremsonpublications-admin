@@ -1,0 +1,64 @@
+@use "/src/styles/variable.scss" as variable;
+
+.banner{
+    .bannerContainer{
+        position: relative;
+        .bannerButton{
+            position: absolute;
+            z-index: 1;
+            background-color: transparent;
+            width: 258px;
+            height: 63px;
+            border-radius: 40px;
+            border: none;
+            outline: none;
+            bottom: 8.8%;
+            left: 42%;
+        }
+    }
+}
+
+@media screen and (max-width: 1040px){
+    .banner{
+        .bannerContainer{
+            .bannerButton{
+                width: 186px;
+                height: 46px;
+                left: 41.5%;
+            }
+        }
+    }
+}
+@media screen and (max-width: 992px){
+    .banner{
+        .bannerContainer{
+            .bannerButton{
+                width: 140px;
+                height: 35.5px;
+                left: 41.5%;
+            }
+        }
+    }
+}
+@media screen and (max-width: 568px){
+    .banner{
+        .bannerContainer{
+            .bannerButton{
+                width: 70px;
+                height: 20.5px;
+                left: 41.5%;
+            }
+        }
+    }
+}
+@media screen and (max-width: 325px){
+    .banner{
+        .bannerContainer{
+            .bannerButton{
+                width: 59px;
+                height: 18.5px;
+                left: 41.5%;
+            }
+        }
+    }
+}

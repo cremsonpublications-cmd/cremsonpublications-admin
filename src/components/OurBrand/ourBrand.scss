@@ -1,0 +1,62 @@
+@use "/src/styles/variable.scss" as variable;
+
+.ourBrand {
+  .ourBrandContainer {
+    padding: 120px 202px;
+    @include variable.d-flex($fd: column, $jc: center, $al: center);
+    gap: 60px;
+    h1 {
+      width: 100%;
+      @include variable.font-style($fs: 48px, $fw: 700, $lh: 48px);
+      color: variable.$text-blue-primary;
+      text-align: center;
+      letter-spacing: -1.92px;
+    }
+    .brandContainer {
+      @include variable.d-flex($al: center);
+      gap: 80px;
+    }
+  }
+}
+
+@media screen and (max-width: 1050px) {
+  .ourBrand {
+    .ourBrandContainer {
+      padding: 120px 80px;
+    }
+  }
+}
+@media screen and (max-width: 992px) {
+  .ourBrand {
+    .ourBrandContainer {
+      padding: 120px 60px;
+
+      h1 {
+        @include variable.font-style($fs: 28px, $fw: 700, $lh: 28px);
+      }
+
+      .brandContainer {
+        .imageWrapper {
+          margin-right: 80px;
+        }
+      }
+    }
+  }
+}
+@media screen and (max-width: 568px) {
+  .ourBrand {
+    .ourBrandContainer {
+      padding: 40px 20px;
+      overflow: hidden;
+       gap: 40px;
+
+      .brandContainer {
+        overflow: hidden;
+
+        .imageWrapper {
+          max-width: 100px;
+        }
+      }
+    }
+  }
+}

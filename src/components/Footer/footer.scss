@@ -1,4 +1,5 @@
 @use "/src/styles/variable.scss" as variable;
+
 .footer {
   background-color: variable.$bg-red-primary;
   padding: 100px 120px 20px 120px;
@@ -56,10 +57,30 @@
             }
           }
         }
+        .email {
+          span {
+            &:first-child {
+              @include variable.font-style($fs: 24px, $fw: 600, $lh: 40px);
+              color: variable.$text-white-secondary;
+              letter-spacing: -0.96px;
+            }
+            &:last-child {
+              @include variable.font-style($fs: 20px, $fw: 500, $lh: 26px);
+              color: variable.$text-white-primary;
+              letter-spacing: -0.2px;
+            }
+          }
+        }
       }
       .navContainer {
         @include variable.d-flex();
         gap: 82px;
+
+        h4 {
+          @include variable.font-style($fs: 24px, $fw: 700, $lh: 30px);
+          color: variable.$text-white-secondary;
+          letter-spacing: -0.72px;
+        }
 
         .linkContainer {
           @include variable.d-flex($fd: column);
@@ -68,6 +89,12 @@
           .linksItemContainer {
             @include variable.d-flex($fd: column);
             gap: 15px;
+
+            span {
+              @include variable.font-style($fs: 20px, $fw: 500, $lh: 28px);
+              color: variable.$text-white-third;
+              letter-spacing: -0.4px;
+            }
           }
         }
         .bankDetailContainer {
@@ -76,6 +103,12 @@
 
           .bankDetailItemContainer {
             @include variable.d-flex($fd: column);
+
+            span {
+              @include variable.font-style($fs: 20px, $fw: 500, $lh: 33px);
+              color: variable.$text-white-third;
+              letter-spacing: -0.4px;
+            }
           }
         }
         .helpContainer {
@@ -85,6 +118,12 @@
           .helptemContainer {
             @include variable.d-flex($fd: column);
             gap: 15px;
+
+            span {
+              @include variable.font-style($fs: 20px, $fw: 500, $lh: 28px);
+              color: variable.$text-white-third;
+              letter-spacing: -0.4px;
+            }
           }
         }
       }
@@ -95,9 +134,64 @@
       padding-top: 20px;
       @include variable.d-flex($jc: space-between);
 
+      p {
+        @include variable.font-style($fs: 18px, $fw: 400, $lh: 30px);
+        color: variable.$text-white-footer-copy;
+        letter-spacing: -0.54px;
+      }
+
       .socialMediaContainer {
         @include variable.d-flex();
         gap: 12px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 1240px) {
+  .footer {
+    .footerContainer {
+      .mainFooter {
+        flex-direction: column;
+        gap: 20px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .footer {
+    padding: 100px 80px 20px 80px;
+
+    .footerContainer {
+      .mainFooter {
+        flex-direction: column;
+        gap: 20px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 992px) {
+  .footer {
+    padding: 100px 60px 20px 60px;
+    .footerContainer {
+      .mainFooter {
+        .navContainer {
+          flex-wrap: wrap;
+        }
+      }
+    }
+  }
+}
+@media screen and (max-width: 568px) {
+  .footer {
+    padding: 40px 20px 20px 20px;
+
+    .footerContainer{
+      .bottomFooter{
+        flex-wrap: wrap;
+        gap: 20px;
       }
     }
   }
