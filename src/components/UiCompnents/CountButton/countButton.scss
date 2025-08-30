@@ -1,0 +1,54 @@
+@use "/src/styles/variable.scss" as variable;
+.countButton {
+  width: 125px;
+  height: 48px;
+  border: 1px solid variable.$productCard-border;
+  border-radius: 12px;
+  @include variable.d-flex();
+  background-color: variable.$bg-orange-primary;
+  .minus {
+    flex: 1;
+    height: 100%;
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+    @include variable.d-flex($al: center, $jc: center);
+
+    .imageWrapper {
+      width: 12px;
+    }
+  }
+  .countInput {
+    flex: 1;
+    height: 100%;
+    @include variable.d-flex($al: center, $jc: center);
+
+    input {
+      border: none;
+      outline: none;
+      width: 40px;
+      color: variable.$text-white-primary;
+      @include variable.font-style($fs: 24px, $fw: 700, $lh: 40px);
+      letter-spacing: -0.96px;
+      text-align: center;
+      background-color: variable.$bg-orange-primary;
+    }
+  }
+
+  .add {
+    flex: 1;
+    height: 100%;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+    @include variable.d-flex($al: center, $jc: center);
+    .imageWrapper {
+      width: 12px;
+      height: 12px;
+    }
+  }
+}
+
+@media screen and (max-width: 568px) {
+    .countButton{
+        width: 100%;
+    }
+}
