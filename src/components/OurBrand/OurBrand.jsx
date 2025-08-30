@@ -9,7 +9,7 @@ const OurBrand = () => {
   return (
     <>
       <section className="ourBrand">
-        <div className="container ourBrandContainer">
+        <div className="containerLocal ourBrandContainer">
           <h1>Our Brands</h1>
           <div className="brandContainer">
             {isMobile ? (

@@ -29,7 +29,7 @@ const NewArrival = () => {
   return (
     <>
       <div className="newArrival">
-        <div className="container newArrivalContainer">
+        <div className="containerLocal newArrivalContainer">
           <div className="topSection">
             <div className="titleContainer">
               <div className="title">

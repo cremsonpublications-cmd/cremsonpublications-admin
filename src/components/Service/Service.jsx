@@ -10,7 +10,7 @@ const Service = () => {
   return (
     <>
       <section className="service">
-        <div className="container serviceContainer">
+        <div className="containerLocal serviceContainer">
           {isMobile ? (
             <Marquee gradient={false} speed={50} pauseOnClick={true}>
               {serviceSectionContents.map((item) => (

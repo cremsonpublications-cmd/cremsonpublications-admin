@@ -14,7 +14,7 @@ const AdHeader = ({ shippingData }) => {
       <section className="addHeader">
         {isMobile ? (
           <Marquee speed={50} gradient={false} pauseOnClick>
-            <div className="container addHeaderContainer">
+            <div className="containerLocal addHeaderContainer">
               <div className="shippingDetails">{shippingData}</div>
               <div className="contactContainer">
                 <div className="phoneNumber">
