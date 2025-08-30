@@ -1,0 +1,12 @@
+@use "/src/styles/variable.scss" as variable;
+
+.newBadge {
+@include variable.d-flex($al:center,$jc:center);
+  background-color: variable.$bg-orange-secondary;
+  color: variable.$bg-white-primary;
+  border-radius: 30px;
+  @include variable.font-style($fs: 16px, $fw: 600);
+  letter-spacing: -0.48px;
+  width: 51px;
+  height: 24px;
+}
