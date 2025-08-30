@@ -13,7 +13,7 @@ const OurBrand = () => {
           <h1>Our Brands</h1>
           <div className="brandContainer">
             {isMobile ? (
-              <Marquee gradient={false} speed={50}>
+              <Marquee gradient={false} speed={50} pauseOnClick={true}>
                 {ourBrandImageList.map((item) => (
                   <div className="imageWrapper" key={item.id}>
                     <img src={item.image} alt={item.altText} />

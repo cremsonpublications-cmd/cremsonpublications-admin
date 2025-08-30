@@ -7,14 +7,19 @@ $text-white-primary: #fff;
 $text-white-secondary: #ffe3c4;
 $text-white-third: #ffc0cb;
 
+$text-black-secondary: #2d2d30;
+
+$text-orange-primary: #FFF6E9;
+
 $text-white-footer-copy: #ddd;
 
 $text-blue-primary: #040d43;
 // background colors
 $bg-white-primary: #fff;
 $bg-red-primary: #B0112D;
-
+// border colors
 $footer-border-top: #8F8F8F;
+$service-border: #ffd8a0;
 
 // mixin
 @mixin d-flex($jc: flex-start, $al: flex-start, $fd: row) {
