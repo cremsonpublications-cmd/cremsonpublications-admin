@@ -1,17 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Search, Plus, Edit2, Trash2, X, AlertTriangle } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { supabase } from "../../supabaseClient";
 import noImage from "../../assets/noImage.jpg";
 import Loader from "./Loader"; // 👈 loader component
+import { AppContext } from "../../context/AppContext";
 
 const CLOUD_NAME = "dkxxa3xt0";
 const UPLOAD_PRESET = "unsigned_preset";
 
 const TestAdminCategories = () => {
+  const { categories, setCategories, categoriesFetched, setCategoriesFetched } =
+    useContext(AppContext);
+
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [categories, setCategories] = useState([]);
+  // const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({ name: "", image: null });
   const [searchTerm, setSearchTerm] = useState("");
   const [imagePreview, setImagePreview] = useState("");
@@ -29,7 +33,10 @@ const TestAdminCategories = () => {
   const [duplicateName, setDuplicateName] = useState("");
 
   useEffect(() => {
-    fetchCategories();
+    if (!categoriesFetched) {
+      fetchCategories();
+      setCategoriesFetched(true);
+    }
   }, []);
 
   async function fetchCategories() {

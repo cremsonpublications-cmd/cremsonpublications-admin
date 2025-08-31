@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -13,6 +13,7 @@ import TestAdminCategories from "./TestAdminCategories";
 import TestProduct from "./TestProdict";
 import AdminOrders from "./AdminOrders";
 import LogoutButton from "./Logout";
+import { AppContext } from "../../context/AppContext";
 
 // Sidebar Component
 const Sidebar = ({
@@ -95,10 +96,12 @@ const Sidebar = ({
 
 // Dashboard Content Component
 const DashboardContent = () => {
+  const { categories, products, orders } = useContext(AppContext);
+
   const stats = [
     {
       title: "Total Categories",
-      value: "4",
+      value: categories.length,
       icon: "📁",
       bgColor: "bg-blue-50",
       iconBg: "bg-blue-100",
@@ -106,7 +109,7 @@ const DashboardContent = () => {
     },
     {
       title: "Total Products",
-      value: "4",
+      value: products.length,
       icon: "📦",
       bgColor: "bg-green-50",
       iconBg: "bg-green-100",
@@ -114,7 +117,7 @@ const DashboardContent = () => {
     },
     {
       title: "Total Orders",
-      value: "4",
+      value: orders.length,
       icon: "🛒",
       bgColor: "bg-yellow-50",
       iconBg: "bg-yellow-100",
