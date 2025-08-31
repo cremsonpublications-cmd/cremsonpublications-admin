@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 
 import {
@@ -23,9 +23,11 @@ import {
 } from "lucide-react";
 import Loader from "./Loader";
 import { supabase } from "../../supabaseClient";
+import { AppContext } from "../../context/AppContext";
 
 const AdminOrders = () => {
-  const [orders, setOrders] = useState([]);
+  const { orders, setOrders, ordersFetched, setOrdersFetched } =
+    useContext(AppContext);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,7 +60,10 @@ const AdminOrders = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
+    if (!ordersFetched) {
+      fetchOrders();
+      setOrdersFetched(true); // mark as fetched to avoid repeated calls
+    }
   }, []);
 
   const getStatusColor = (status) => {

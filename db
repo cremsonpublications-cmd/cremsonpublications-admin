@@ -1,0 +1,175 @@
+-- ======================================================
+-- 1. Drop existing tables (clean start)
+-- ======================================================
+drop table if exists orders cascade;
+drop table if exists products cascade;
+drop table if exists categories cascade;
+
+-- ======================================================
+-- 2. Categories
+-- ======================================================
+create table categories (
+  id serial primary key,
+  name text not null unique,   -- 🚨 ensure category names are unique
+  image text
+);
+
+-- Dummy categories with image URLs
+insert into categories (name, image) values
+('Garland Crackers', 'https://res.cloudinary.com/demo/image/upload/v1691234567/garland.jpg'),
+('Sparklers', 'https://res.cloudinary.com/demo/image/upload/v1691234567/sparklers.jpg'),
+('Fountains', 'https://res.cloudinary.com/demo/image/upload/v1691234567/fountains.jpg'),
+('Rockets', 'https://res.cloudinary.com/demo/image/upload/v1691234567/rockets.jpg');
+
+-- ======================================================
+-- 3. Products
+-- ======================================================
+create table products (
+  id serial primary key,
+  name text not null,
+  category_id int references categories(id) on delete set null,
+  type text,
+  old_price numeric,
+  current_price numeric,
+  discount numeric,
+  stock int default 0,
+  description text,
+  image text,
+  side_images text[],       -- new column for side images
+  video text,
+  tags text[],
+  safety text,
+  how_to_use text[],
+  rating numeric,
+  weight text,
+  package_contents text[],
+  popular boolean default false,
+  new_arrival boolean default false,
+  year int,
+  cracker_type text
+);
+
+-- Dummy products (with Cloudinary images)
+insert into products 
+(name, category_id, type, old_price, current_price, discount, stock, description, image, side_images, video, tags, safety, how_to_use, rating, weight, package_contents, popular, new_arrival, year, cracker_type)
+values
+(
+  '100 Wala', 1, 'Loud', 120, 102, 15, 50,
+  'Classic 100 shots firecracker garland, perfect for festivals.',
+  'https://res.cloudinary.com/demo/image/upload/v1691234567/100wala_main.jpg',
+  array[
+    'https://res.cloudinary.com/demo/image/upload/v1691234567/100wala_side1.jpg',
+    'https://res.cloudinary.com/demo/image/upload/v1691234567/100wala_side2.jpg'
+  ],
+  'https://res.cloudinary.com/demo/video/upload/v1691234567/100wala.mp4',
+  array['garland','festival','loud'],
+  'Keep away from children. Light in open areas.',
+  array['Unroll the garland on the ground in an open area.',
+        'Place it flat on the surface, not in hand.',
+        'Light the first end using a long stick/match.',
+        'Move back quickly and watch safely.'],
+  4.3,
+  '200g',
+  array['100 shots in a roll'],
+  true, false, 2024, 'day'
+),
+(
+  'Sparklers 12 inch', 2, 'Sparkle', 70, 57, 18, 100,
+  'Bright sparklers, safe for kids under supervision.',
+  'https://res.cloudinary.com/demo/image/upload/v1691234567/sparklers12_main.jpg',
+  array[
+    'https://res.cloudinary.com/demo/image/upload/v1691234567/sparklers12_side1.jpg'
+  ],
+  null,
+  array['sparkler','festival','kids'],
+  'Use under adult supervision only.',
+  array['Hold at arm’s length.','Light the coated end only.','Do not touch until cool.'],
+  4.7,
+  '50g',
+  array['Pack of 5 sparklers'],
+  false, true, 2024, 'night'
+);
+
+-- ======================================================
+-- 4. Orders
+-- ======================================================
+create table orders (
+  id serial primary key,
+  order_id text unique,
+  user_info jsonb not null,
+  items jsonb not null,
+  order_summary jsonb,
+  payment jsonb,
+  delivery jsonb,
+  order_date date default current_date,
+  last_updated timestamp default now()
+);
+
+-- Dummy order
+insert into orders 
+(order_id, user_info, items, order_summary, payment, delivery, order_date, last_updated)
+values
+(
+  'ORD1001',
+  '{
+    "userId": "USR001",
+    "name": "Arjun Kumar",
+    "email": "arjun@example.com",
+    "phone": "+91-9876543210",
+    "address": {
+      "street": "12, MG Road",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600001"
+    }
+  }',
+  '[
+    { "productId": 1, "name": "100 Wala", "quantity": 2, "currentPrice": 102, "totalPrice": 204 },
+    { "productId": 2, "name": "Sparklers 12 inch", "quantity": 3, "currentPrice": 57, "totalPrice": 171 }
+  ]',
+  '{
+    "subTotal": 375,
+    "discountTotal": 36,
+    "deliveryCharge": 40,
+    "grandTotal": 415
+  }',
+  '{
+    "method": "UPI",
+    "status": "Paid",
+    "transactionId": "TXN987654321"
+  }',
+  '{
+    "status": "Processing",
+    "expectedDate": "2025-09-02",
+    "trackingId": null
+  }',
+  '2025-08-26',
+  '2025-08-26 10:30:00'
+);
+
+-- ======================================================
+-- 5. Enable RLS
+-- ======================================================
+alter table categories enable row level security;
+alter table products enable row level security;
+alter table orders enable row level security;
+
+-- ======================================================
+-- 6. CRUD Policies
+-- ======================================================
+create policy categories_select on categories for select using (true);
+create policy categories_insert on categories for insert with check (true);
+create policy categories_update on categories for update using (true) with check (true);
+create policy categories_delete on categories for delete using (true);
+
+create policy products_select on products for select using (true);
+create policy products_insert on products for insert with check (true);
+create policy products_update on products for update using (true) with check (true);
+create policy products_delete on products for delete using (true);
+
+create policy orders_select on orders for select using (true);
+create policy orders_insert on orders for insert with check (true);
+create policy orders_update on orders for update using (true) with check (true);
+create policy orders_delete on orders for delete using (true);
+
+
