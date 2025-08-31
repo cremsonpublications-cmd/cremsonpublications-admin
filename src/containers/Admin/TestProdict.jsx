@@ -1,18 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Search, Plus, Edit2, Trash2, X, AlertTriangle } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import noImage from "../../assets/noImage.jpg";
 import Loader from "./Loader";
 import { supabase } from "../../supabaseClient";
+import { AppContext } from "../../context/AppContext";
 
 const CLOUD_NAME = "dkxxa3xt0";
 const UPLOAD_PRESET = "unsigned_preset";
 
 const TestProduct = () => {
+  const {
+    products,
+    setProducts,
+    categories,
+    setCategories,
+    productsFetched,
+    setProductsFetched,
+    categoriesFetched,
+    setCategoriesFetched,
+  } = useContext(AppContext);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -31,9 +40,19 @@ const TestProduct = () => {
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [duplicateName, setDuplicateName] = useState("");
 
+  // useEffect(() => {
+  //   if (!products || products.length === 0) fetchProducts();
+  //   if (!categories || categories.length === 0) fetchCategories();
+  // }, [products, categories]);
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    if (!productsFetched) {
+      fetchProducts();
+      setProductsFetched(true);
+    }
+    if (!categoriesFetched) {
+      fetchCategories();
+      setCategoriesFetched(true);
+    }
   }, []);
 
   async function fetchProducts() {

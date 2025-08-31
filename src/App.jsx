@@ -9,7 +9,9 @@ import UserShop from "./containers/Admin/UserShop";
 import LoginPage from "./containers/Admin/LoginPage";
 import AdminDashboard from "./containers/Admin/AdminDashboard";
 import Footer from "./components/Footer/Footer";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "./context/AppContext";
+import { toast } from "sonner";
 // import OrderTracking from "./containers/Admin/TrackOrder"; // if you need later
 
 // --- Route Guards ---
@@ -73,34 +75,82 @@ function LoginRoute({ children }) {
 
 export default function App() {
   const location = useLocation();
+  const {
+    categoriesFetched,
+    setCategoriesFetched,
+    productsFetched,
+    setProductsFetched,
+    ordersFetched,
+    setOrdersFetched,
+    setCategories,
+    setProducts,
+    setOrders,
+    setLoading,
+  } = useContext(AppContext);
 
   // Hide header/footer on admin and login pages
   const hideLayout =
     location.pathname.startsWith("/admin") || location.pathname === "/login";
 
-  useEffect(() => {
-    const fetchCategories = async () => {
+  async function fetchCategories() {
+    setLoading(true);
+    try {
       const { data, error } = await supabase.from("categories").select("*");
       if (error) {
         console.error(error);
+        toast.error("Failed to fetch categories");
       } else {
-        console.log(data, "zzzzzzz");
+        setCategories(data || []);
       }
-    };
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching categories");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    fetchCategories();
-  }, []);
-  useEffect(() => {
-    const fetchProduct = async () => {
-      const { data, error } = await supabase.from("products").select("*");
+  async function fetchProducts() {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*, categories(name)");
+    if (error) console.error(error);
+    else setProducts(data);
+  }
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from("orders").select("*");
       if (error) {
-        console.error(error);
+        console.error("Error fetching orders:", error);
+        toast.error("Failed to fetch orders");
       } else {
-        console.log(data, "xxxxxx");
+        setOrders(data || []);
       }
-    };
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error("Failed to fetch orders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProduct();
+  useEffect(() => {
+    if (!categoriesFetched) {
+      fetchCategories();
+      setCategoriesFetched(true);
+    }
+
+    if (!productsFetched) {
+      fetchProducts();
+      setProductsFetched(true);
+    }
+
+    if (!ordersFetched) {
+      fetchOrders();
+      setOrdersFetched(true);
+    }
   }, []);
 
   return (
