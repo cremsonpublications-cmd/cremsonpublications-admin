@@ -1,5 +1,6 @@
 
 import Banner from "../../components/Banner/Banner";
+import Categories from "../../components/Categories/Categories";
 import GiftBoxCarousel from "../../components/GiftBoxCarousel/GiftBoxCarousel";
 import NewArrival from "../../components/NewArrival/NewArrival";
 import OurBrand from "../../components/OurBrand/OurBrand";
@@ -13,6 +14,7 @@ const Home = () => {
     <NewArrival />
     <GiftBoxCarousel />
     <Service />
+    <Categories />
     </>
   );
 };

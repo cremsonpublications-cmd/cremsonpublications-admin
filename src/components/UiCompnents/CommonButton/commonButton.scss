@@ -28,7 +28,26 @@
   border-radius: 12px;
   width: 180px;
   height: 48px;
-  @media screen and (max-width: 568px){
+  @media screen and (max-width: 568px) {
     width: 100%;
+  }
+}
+
+.categoryBuyNow {
+  @include variable.font-style($fs: 20px, $fw: 600, $lh: 30px);
+  border-radius: 40px;
+  border: 1px solid variable.$productCard-border;
+  background: variable.$bg-white-primary;
+  width: 100%;
+  height: 48px;
+  color: variable.$text-blue-primary;
+  text-align: center;
+  letter-spacing: -0.6px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: variable.$bg-orange-primary;
+    border: none;
+    color: variable.$text-white-primary;
   }
 }
