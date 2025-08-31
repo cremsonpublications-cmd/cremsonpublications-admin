@@ -1,0 +1,70 @@
+@use "/src/styles/variable.scss" as variable;
+
+.categories {
+  .categoriesContainer {
+    padding: 0 120px 120px 120px;
+    @include variable.d-flex($fd: column,$al:center);
+    gap: 60px;
+
+    .titleContainer {
+      width: 100%;
+      @include variable.d-flex($fd: column);
+      gap: 20px;
+      h1 {
+        width: 100%;
+        @include variable.font-style($fs: 48px, $fw: 700, $lh: 48px);
+        text-align: center;
+        letter-spacing: -1.92px;
+        color: variable.$text-blue-primary;
+        span {
+          color: variable.$text-red-primary;
+        }
+      }
+      p {
+        width: 100%;
+        @include variable.font-style($fs: 20px, $fw: 400, $lh: 30px);
+        color: variable.$text-black-secondary;
+        text-align: center;
+      }
+    }
+    .categoryCardsContainer {
+      @include variable.d-flex();
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .viewMoreButton {
+    }
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .categories {
+    .categoriesContainer {
+      padding: 0 80px 120px 80px;
+    }
+  }
+}
+@media screen and (max-width: 992px) {
+  .categories {
+    .categoriesContainer {
+      padding: 0 60px 120px 60px;
+    }
+  }
+}
+@media screen and (max-width: 568px) {
+  .categories {
+    .categoriesContainer {
+      padding: 0 20px 40px 20px;
+            gap: 20px;
+
+      .titleContainer {
+        h1 {
+          @include variable.font-style($fs: 28px, $fw: 700, $lh: 28px);
+        }
+      }
+      .categoryCardsContainer{
+        justify-content: center;
+      }
+    }
+  }
+}

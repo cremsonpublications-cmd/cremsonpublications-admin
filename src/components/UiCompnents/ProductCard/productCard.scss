@@ -1,7 +1,7 @@
 @use "/src/styles/variable.scss" as variable;
 
 .productCardContainer {
-  padding: 30px;
+  padding: 29px;
   border: 1px solid variable.$productCard-border;
   border-radius: 30px;
   @include variable.d-flex($fd: column);
@@ -25,6 +25,11 @@
       z-index: 1;
       width: 132px;
       height: 170px;
+
+      img {
+        width: 100%;
+        height: 100%;
+      }
     }
     .favIcon {
       z-index: 1;
@@ -53,7 +58,7 @@
       p {
         width: 100%;
         color: #fff;
-       
+
         text-align: center;
         font-size: 11.983px;
         font-style: normal;
@@ -67,6 +72,22 @@
     width: 100%;
     @include variable.d-flex($fd: column);
     gap: 38px;
+
+    .categoryDataContainer {
+      width: 100%;
+      @include variable.d-flex($fd: column);
+      gap: 30px;
+      p{
+        width: 100%;
+        @include variable.font-style($fs: 24px, $fw: 600, $lh: 40px);
+        color: variable.$text-blue-primary;
+        text-align: center;
+        letter-spacing: -0.96px;
+      }
+      .buyButton {
+        width: 100%;
+      }
+    }
 
     .dataContainer {
       width: 100%;

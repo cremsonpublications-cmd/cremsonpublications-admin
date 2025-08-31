@@ -13,7 +13,8 @@ const ProductCard = ({
   isNewArrival = false,
   currentPrize,
   oldPrize,
-  discount
+  discount,
+  isProductCard = true,
 }) => {
   const [addedToCart, setAddedToCart] = useState(false); // ✅ Track state
   const handleAddToCart = () => {
@@ -31,47 +32,60 @@ const ProductCard = ({
           <div className="imageWrapper">
             <img src={image} alt={name} />
           </div>
-          <div className="favIcon">
-            <FavIcon />
-          </div>
+          {isProductCard === true && (
+            <div className="favIcon">
+              <FavIcon />
+            </div>
+          )}
           <div className="discountTag">
             <h4>{`${discount}%`}</h4>
             <p>OFF</p>
           </div>
         </div>
         <div className="dataSection">
-          <div className="dataContainer">
-            <div className="productDetail">
-              <div className="title">
-                <h4>{name}</h4>
-                {isNewArrival && <NewBadge />}
+          {!isProductCard ? (
+            <div className="categoryDataContainer">
+              <p>{name}</p>
+              <div className="buyButton">
+                <CommonButton buttonText="Buy Now" styleClass="categoryBuyNow"/>
               </div>
+            </div>
+          ) : (
+            <div className="dataContainer">
+              <div className="productDetail">
+                <div className="title">
+                  <h4>{name}</h4>
+                  {isNewArrival && <NewBadge />}
+                </div>
 
-              <p>{packageContent[0]}</p>
-            </div>
-            <div className="priceContainer">
-              <p className="currentPrize">
-                <span className="rupee">₹&nbsp;</span>
-                {currentPrize}
-              </p>
-              <span className="oldPrize">{`${oldPrize}.00`}</span>
-            </div>
-          </div>
-          <div className="actionContainer">
-            {addedToCart ? (
-              <div className="countWrapper">
-                <CountButton />
+                <p>{packageContent?.[0] || ""}</p>
               </div>
-            ) : (
-              <div className="addButton">
-                <CommonButton
-                  buttonText="Add to Cart"
-                  styleClass="orangeNormal"
-                  onClick={handleAddToCart}
-                />
+              <div className="priceContainer">
+                <p className="currentPrize">
+                  <span className="rupee">₹&nbsp;</span>
+                  {currentPrize}
+                </p>
+                <span className="oldPrize">{`${oldPrize}.00`}</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          {isProductCard && (
+            <div className="actionContainer">
+              {addedToCart ? (
+                <div className="countWrapper">
+                  <CountButton />
+                </div>
+              ) : (
+                <div className="addButton">
+                  <CommonButton
+                    buttonText="Add to Cart"
+                    styleClass="orangeNormal"
+                    onClick={handleAddToCart}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>
