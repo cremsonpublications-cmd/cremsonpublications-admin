@@ -16,12 +16,12 @@ const TestAdminCategories = () => {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   // const [categories, setCategories] = useState([]);
-  const [formData, setFormData] = useState({ name: "", image: null });
+  const [formData, setFormData] = useState({ name: "", image: null, offer_type: "none", offer_percentage: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [originalData, setOriginalData] = useState({ name: "", image: "" });
+  const [originalData, setOriginalData] = useState({ name: "", image: "", offer_type: "none", offer_percentage: "" });
 
   // Delete modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -102,7 +102,12 @@ const TestAdminCategories = () => {
         imageUrl = await uploadImage(formData.image);
       }
 
-      const payload = { name: formData.name.trim(), image: imageUrl };
+      const payload = {
+        name: formData.name.trim(),
+        image: imageUrl,
+        offer_type: formData.offer_type,
+        offer_percentage: formData.offer_type === 'discount' ? parseFloat(formData.offer_percentage) || null : null,
+      };
 
       if (editId) {
         const { error } = await supabase
@@ -140,9 +145,19 @@ const TestAdminCategories = () => {
   };
 
   const handleEdit = (category) => {
-    setFormData({ name: category.name, image: null });
+    setFormData({
+      name: category.name,
+      image: null,
+      offer_type: category.offer_type || 'none',
+      offer_percentage: category.offer_percentage || ''
+    });
     setImagePreview(category.image || "");
-    setOriginalData({ name: category.name, image: category.image || "" });
+    setOriginalData({
+      name: category.name,
+      image: category.image || "",
+      offer_type: category.offer_type || 'none',
+      offer_percentage: category.offer_percentage || ''
+    });
 
     setEditId(category.id);
     setShowForm(true);
@@ -152,7 +167,9 @@ const TestAdminCategories = () => {
     const nameChanged = formData.name.trim() !== originalData.name.trim();
     const imageChanged =
       formData.image instanceof File || imagePreview !== originalData.image;
-    return nameChanged || imageChanged;
+    const offerTypeChanged = formData.offer_type !== originalData.offer_type;
+    const offerPercentageChanged = formData.offer_percentage !== originalData.offer_percentage;
+    return nameChanged || imageChanged || offerTypeChanged || offerPercentageChanged;
   };
 
   const openDeleteModal = (id, name) => {
@@ -184,10 +201,10 @@ const TestAdminCategories = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: "", image: null });
+    setFormData({ name: "", image: null, offer_type: "none", offer_percentage: "" });
     setImagePreview("");
     setEditId(null);
-    setOriginalData({ name: "", image: "" });
+    setOriginalData({ name: "", image: "", offer_type: "none", offer_percentage: "" });
     setShowForm(false);
   };
 
@@ -282,6 +299,50 @@ const TestAdminCategories = () => {
                 )}
               </div>
 
+              {/* Offer Settings */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Offer Settings</h3>
+
+                {/* Offer Type */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Offer Type
+                  </label>
+                  <select
+                    value={formData.offer_type}
+                    onChange={(e) =>
+                      setFormData({ ...formData, offer_type: e.target.value, offer_percentage: "" })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                  >
+                    <option value="none">No Offer</option>
+                    <option value="discount">Discount</option>
+                  </select>
+                </div>
+
+                {/* Discount Percentage */}
+                {formData.offer_type === 'discount' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Discount Percentage (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={formData.offer_percentage}
+                      onChange={(e) =>
+                        setFormData({ ...formData, offer_percentage: e.target.value })
+                      }
+                      placeholder="Enter discount percentage (0-100)"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                    />
+                  </div>
+                )}
+
+              </div>
+
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
                 <button
@@ -354,6 +415,16 @@ const TestAdminCategories = () => {
                     <h3 className="font-semibold text-gray-900 text-lg mb-2">
                       {category.name}
                     </h3>
+
+                    {/* Offer Badge */}
+                    {category.offer_type && category.offer_type !== 'none' && (
+                      <div className="mb-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {`${category.offer_percentage}% OFF`}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <span className="text-purple-600 font-medium text-sm">
                         {category.productCount || 0} Products

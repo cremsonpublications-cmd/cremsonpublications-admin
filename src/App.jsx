@@ -4,8 +4,7 @@ import { supabase } from "./supabaseClient";
 import Loader from "./containers/Admin/Loader";
 import AdHeader from "./components/AdHeader/AdHeader";
 import NavHeader from "./components/NavHeader/NavHeader";
-import Home from "./containers/Home/Home";
-import UserShop from "./containers/Admin/UserShop";
+
 import LoginPage from "./containers/Admin/LoginPage";
 import AdminDashboard from "./containers/Admin/AdminDashboard";
 import Footer from "./components/Footer/Footer";
@@ -159,8 +158,6 @@ export default function App() {
       {!hideLayout && <NavHeader />}
 
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/shop" element={<UserShop />} />
         {/* <Route path="/track" element={<OrderTracking />} /> */}
 
         <Route
@@ -183,7 +180,7 @@ export default function App() {
         />
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
       {!hideLayout && <Footer />}

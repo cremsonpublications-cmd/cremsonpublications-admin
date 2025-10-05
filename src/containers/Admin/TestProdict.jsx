@@ -1,3 +1,4 @@
+
 import React, { useContext, useEffect, useState } from "react";
 import { Search, Plus, Edit2, Trash2, X, AlertTriangle } from "lucide-react";
 import { Toaster, toast } from "sonner";
@@ -40,10 +41,6 @@ const TestProduct = () => {
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [duplicateName, setDuplicateName] = useState("");
 
-  // useEffect(() => {
-  //   if (!products || products.length === 0) fetchProducts();
-  //   if (!categories || categories.length === 0) fetchCategories();
-  // }, [products, categories]);
   useEffect(() => {
     if (!productsFetched) {
       fetchProducts();
@@ -94,7 +91,7 @@ const TestProduct = () => {
     const file = e.target.files[0];
     if (file) {
       setImagePreview(URL.createObjectURL(file));
-      setFormData({ ...formData, image: file });
+      setFormData({ ...formData, mainImage: file });
     }
   };
 
@@ -105,7 +102,7 @@ const TestProduct = () => {
   };
 
   const removeMainImage = () => {
-    setFormData({ ...formData, image: null });
+    setFormData({ ...formData, mainImage: null });
     setImagePreview("");
     toast.info("Main image removed");
   };
@@ -129,16 +126,12 @@ const TestProduct = () => {
       toast.error("Current price is required!");
       return;
     }
-    if (!formData.packageContents?.trim()) {
-      toast.error("Package contents is required!");
-      return;
-    }
 
     setLoading(true);
     try {
       let mainUrl = imagePreview || noImage;
-      if (formData.image instanceof File) {
-        mainUrl = await uploadImage(formData.image);
+      if (formData.mainImage instanceof File) {
+        mainUrl = await uploadImage(formData.mainImage);
       }
 
       let sideUrls = [];
@@ -155,31 +148,42 @@ const TestProduct = () => {
       const payload = {
         name: formData.name,
         category_id: formData.category_id || null,
-        type: formData.type,
-        old_price: formData.oldPrice,
-        current_price: formData.currentPrice,
-        discount: formData.discount,
-        stock: formData.stock,
+        price: parseFloat(formData.currentPrice) || 0,
+        old_price: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
+        status: formData.status || "In Stock",
+        author: formData.author,
+        isbn: formData.isbn,
+        edition: formData.edition,
         description: formData.description,
-        image: mainUrl,
-        side_images: sideUrls,
-        video: formData.video,
+        classes: formData.classes,
         tags: formData.tags
           ? formData.tags.split(",").map((t) => t.trim())
           : [],
-        safety: formData.safety,
-        how_to_use: formData.howToUse
-          ? formData.howToUse.split(",").map((t) => t.trim())
+        main_image: mainUrl,
+        side_images: sideUrls,
+
+        // Delivery and Returns information
+        delivery_info:
+          formData.deliveryInfo ||
+          "Store delivery FREE - 1-3 working days\n\nHome or collection point from £35.00 FREE - On all your orders for home or collection point delivery",
+        returns_info:
+          formData.returnsInfo ||
+          "Returns: We will accept exchanges and returns of unworn and unwashed garments within 30 days of the date of purchase (14 days during the sales period).\n\nReturns in store FREE - Your return will usually be processed within a week to a week and a half. We will send you a Return Notification email to notify you once the return has been completed. Please allow 1-3 business days for refunds to be received to the original form of payment once the return has been processed.",
+
+        // Bulk pricing (array of {quantity, price} objects)
+        bulk_pricing: formData.enableBulkPricing
+          ? (formData.bulkPricing || []).filter((bp) => bp.quantity && bp.price)
           : [],
-        rating: formData.rating,
+
+        // Product discount options
+        has_own_discount: formData.has_own_discount || false,
+        own_discount_percentage: formData.own_discount_percentage || null,
+
+        // Reviews (will be empty array for new products)
+        reviews: formData.reviews || [],
+
         weight: formData.weight,
-        package_contents: formData.packageContents
-          ? formData.packageContents.split(",").map((t) => t.trim())
-          : [],
-        popular: formData.popular || false,
-        new_arrival: formData.newArrival || false,
-        year: formData.year,
-        cracker_type: formData.crackerType,
+        year: formData.year ? parseInt(formData.year) : null,
       };
 
       if (editId) {
@@ -221,16 +225,17 @@ const TestProduct = () => {
     setFormData({
       ...product,
       oldPrice: product.old_price,
-      currentPrice: product.current_price,
-      packageContents: product.package_contents?.join(","),
+      currentPrice: product.price,
       tags: product.tags?.join(","),
-      howToUse: product.how_to_use?.join(","),
       sideImages: product.side_images || [],
-      newArrival: product.new_arrival,
-      crackerType: product.cracker_type,
-      howToUse: product.how_to_use?.join(",") || "",
+      deliveryInfo: product.delivery_info || "",
+      returnsInfo: product.returns_info || "",
+      bulkPricing: product.bulk_pricing || [],
+      enableBulkPricing: (product.bulk_pricing || []).length > 0,
+      has_own_discount: product.has_own_discount || false,
+      own_discount_percentage: product.own_discount_percentage || null,
     });
-    setImagePreview(product.image || "");
+    setImagePreview(product.main_image || "");
     setSidePreviews(product.side_images || []);
     setOriginalData(product);
     setEditId(product.id);
@@ -242,7 +247,7 @@ const TestProduct = () => {
 
     const nameChanged = formData.name?.trim() !== originalData.name?.trim();
     const imageChanged =
-      formData.image instanceof File ||
+      formData.mainImage instanceof File ||
       imagePreview !== (originalData.image || "");
     const sideImagesChanged =
       JSON.stringify(sidePreviews) !==
@@ -255,22 +260,14 @@ const TestProduct = () => {
       formData.category_id !== originalData.category_id ||
       formData.type !== originalData.type ||
       formData.oldPrice !== originalData.old_price ||
-      formData.currentPrice !== originalData.current_price ||
-      formData.discount !== originalData.discount ||
-      formData.stock !== originalData.stock ||
+      formData.currentPrice !== originalData.price ||
       formData.description !== originalData.description ||
-      formData.video !== originalData.video ||
       formData.tags !== (originalData.tags?.join(",") || "") ||
-      formData.safety !== originalData.safety ||
-      formData.howToUse !== (originalData.how_to_use?.join(",") || "") ||
       formData.rating !== originalData.rating ||
       formData.weight !== originalData.weight ||
-      formData.packageContents !==
-        (originalData.package_contents?.join(",") || "") ||
-      formData.popular !== originalData.popular ||
-      formData.newArrival !== originalData.new_arrival ||
       formData.year !== originalData.year ||
-      formData.crackerType !== originalData.cracker_type
+      formData.deliveryInfo !== (originalData.delivery_info || "") ||
+      formData.returnsInfo !== (originalData.returns_info || "")
     );
   };
 
@@ -388,25 +385,6 @@ const TestProduct = () => {
                 </select>
               </div>
 
-              {/* Package Contents */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Package Contents <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.packageContents || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      packageContents: e.target.value,
-                    })
-                  }
-                  placeholder="Enter package contents (comma separated)"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
-                />
-              </div>
-
               {/* Main Image */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -481,18 +459,66 @@ const TestProduct = () => {
 
               {/* Two column layout for form fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Type */}
+                {/* Author */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type
+                    Author
                   </label>
                   <input
                     type="text"
-                    value={formData.type || ""}
+                    value={formData.author || ""}
                     onChange={(e) =>
-                      setFormData({ ...formData, type: e.target.value })
+                      setFormData({ ...formData, author: e.target.value })
                     }
-                    placeholder="Enter product type"
+                    placeholder="Enter author name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                  />
+                </div>
+
+                {/* ISBN */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ISBN
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.isbn || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isbn: e.target.value })
+                    }
+                    placeholder="Enter ISBN number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                  />
+                </div>
+
+                {/* Edition */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Edition
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.edition || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, edition: e.target.value })
+                    }
+                    placeholder="Enter edition (e.g., 2024 Edition)"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                  />
+                </div>
+
+                {/* Classes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Classes/Level
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.classes || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, classes: e.target.value })
+                    }
+                    placeholder="Enter class level (e.g., Class 10, CBSE)"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                   />
                 </div>
@@ -529,36 +555,24 @@ const TestProduct = () => {
                   />
                 </div>
 
-                {/* Discount */}
+                {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Discount (%)
+                    Status
                   </label>
-                  <input
-                    type="number"
-                    value={formData.discount || ""}
+                  <select
+                    value={formData.status || ""}
                     onChange={(e) =>
-                      setFormData({ ...formData, discount: e.target.value })
+                      setFormData({ ...formData, status: e.target.value })
                     }
-                    placeholder="Enter discount percentage"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
-                  />
-                </div>
-
-                {/* Stock */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Stock
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.stock || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, stock: e.target.value })
-                    }
-                    placeholder="Enter stock quantity"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
-                  />
+                  >
+                    <option value="In Stock">In Stock</option>
+                    <option value="Out of Stock">Out of Stock</option>
+                    <option value="On Sale">On Sale</option>
+                    <option value="Featured">Featured</option>
+                    <option value="On Backorders">On Backorders</option>
+                  </select>
                 </div>
 
                 {/* Rating */}
@@ -611,40 +625,6 @@ const TestProduct = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                   />
                 </div>
-
-                {/* Cracker Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cracker Type
-                  </label>
-                  <select
-                    value={formData.crackerType || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, crackerType: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
-                  >
-                    <option value="">-- Select Cracker Type --</option>
-                    <option value="day">Day</option>
-                    <option value="night">Night</option>
-                  </select>
-                </div>
-
-                {/* Video URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Video URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.video || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, video: e.target.value })
-                    }
-                    placeholder="Enter video URL"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
-                  />
-                </div>
               </div>
 
               {/* Full width fields */}
@@ -664,6 +644,210 @@ const TestProduct = () => {
                 />
               </div>
 
+              {/* Delivery Information */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Delivery Information
+                </label>
+                <textarea
+                  rows={4}
+                  value={formData.deliveryInfo || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deliveryInfo: e.target.value })
+                  }
+                  placeholder="Store delivery FREE - 1-3 working days
+
+Home or collection point from £35.00 FREE - On all your orders for home or collection point delivery"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                />
+              </div>
+
+              {/* Returns Information */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Returns Information
+                </label>
+                <textarea
+                  rows={5}
+                  value={formData.returnsInfo || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, returnsInfo: e.target.value })
+                  }
+                  placeholder="Returns: We will accept exchanges and returns of unworn and unwashed garments within 30 days of the date of purchase (14 days during the sales period).
+
+Returns in store FREE - Your return will usually be processed within a week to a week and a half. We will send you a Return Notification email to notify you once the return has been completed. Please allow 1-3 business days for refunds to be received to the original form of payment once the return has been processed."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                />
+              </div>
+
+              {/* Bulk Pricing Toggle */}
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.enableBulkPricing || false}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        enableBulkPricing: e.target.checked,
+                        bulkPricing: e.target.checked
+                          ? formData.bulkPricing || []
+                          : [],
+                      });
+                    }}
+                    className="mr-2"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Enable Bulk Pricing
+                  </span>
+                </label>
+              </div>
+
+              {/* Bulk Pricing Rules */}
+              {formData.enableBulkPricing && (
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    Bulk Pricing Rules
+                  </h3>
+                  <div className="space-y-2">
+                    {(formData.bulkPricing || []).map((bulk, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={bulk.quantity || ""}
+                          onChange={(e) => {
+                            const newBulkPricing = [
+                              ...(formData.bulkPricing || []),
+                            ];
+                            newBulkPricing[index] = {
+                              ...newBulkPricing[index],
+                              quantity: parseInt(e.target.value) || 0,
+                            };
+                            setFormData({
+                              ...formData,
+                              bulkPricing: newBulkPricing,
+                            });
+                          }}
+                          placeholder="Quantity"
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                        />
+                        <span className="text-gray-500">for</span>
+                        <span className="text-gray-500">₹</span>
+                        <input
+                          type="number"
+                          value={bulk.price || ""}
+                          onChange={(e) => {
+                            const newBulkPricing = [
+                              ...(formData.bulkPricing || []),
+                            ];
+                            newBulkPricing[index] = {
+                              ...newBulkPricing[index],
+                              price: parseFloat(e.target.value) || 0,
+                            };
+                            setFormData({
+                              ...formData,
+                              bulkPricing: newBulkPricing,
+                            });
+                          }}
+                          placeholder="Price"
+                          className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                        />
+                        <span className="text-gray-500">each</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newBulkPricing =
+                              formData.bulkPricing?.filter(
+                                (_, i) => i !== index
+                              ) || [];
+                            setFormData({
+                              ...formData,
+                              bulkPricing: newBulkPricing,
+                            });
+                          }}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Delete this bulk pricing rule"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newBulkPricing = [
+                          ...(formData.bulkPricing || []),
+                          { quantity: "", price: "" },
+                        ];
+                        setFormData({
+                          ...formData,
+                          bulkPricing: newBulkPricing,
+                        });
+                      }}
+                      className="inline-flex items-center px-3 py-2 text-sm text-purple-600 hover:text-purple-700"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Bulk Pricing Rule
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Product Coupon */}
+              {/* Discount Options */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Discount Settings
+                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="discountType"
+                      value="category"
+                      checked={!formData.has_own_discount}
+                      onChange={() => setFormData({ ...formData, has_own_discount: false, own_discount_percentage: null })}
+                      className="mr-2 text-purple-600"
+                    />
+                    <span className="text-sm">Use Category Discount</span>
+                    {formData.category_id && categories.find(c => c.id === formData.category_id)?.offer_type === 'discount' && (
+                      <span className="ml-2 text-xs text-green-600">
+                        ({categories.find(c => c.id === formData.category_id)?.offer_percentage}% off)
+                      </span>
+                    )}
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="discountType"
+                      value="own"
+                      checked={formData.has_own_discount}
+                      onChange={() => setFormData({ ...formData, has_own_discount: true })}
+                      className="mr-2 text-purple-600"
+                    />
+                    <span className="text-sm">Set Own Discount</span>
+                  </label>
+                  {formData.has_own_discount && (
+                    <div className="ml-6">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        placeholder="Discount percentage"
+                        value={formData.own_discount_percentage || ""}
+                        onChange={(e) => setFormData({ ...formData, own_discount_percentage: e.target.value ? parseFloat(e.target.value) : null })}
+                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                      />
+                      <span className="ml-2 text-sm text-gray-500">%</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Choose between category-wide discount or set a custom discount for this product
+                </p>
+              </div>
+
               {/* Tags */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -678,68 +862,6 @@ const TestProduct = () => {
                   placeholder="Enter tags (comma separated)"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                 />
-              </div>
-
-              {/* Safety */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Safety Instructions
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.safety || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, safety: e.target.value })
-                  }
-                  placeholder="Enter safety instructions"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
-                />
-              </div>
-
-              {/* How To Use */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  How To Use
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.howToUse || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, howToUse: e.target.value })
-                  }
-                  placeholder="Enter instructions (comma separated for multiple steps)"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
-                />
-              </div>
-
-              {/* Checkboxes */}
-              <div className="flex gap-8">
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={formData.popular || false}
-                    onChange={(e) =>
-                      setFormData({ ...formData, popular: e.target.checked })
-                    }
-                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    Popular
-                  </span>
-                </label>
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={formData.newArrival || false}
-                    onChange={(e) =>
-                      setFormData({ ...formData, newArrival: e.target.checked })
-                    }
-                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    New Arrival
-                  </span>
-                </label>
               </div>
 
               {/* Actions */}
@@ -758,14 +880,12 @@ const TestProduct = () => {
                     !formData.name?.trim() ||
                     !formData.currentPrice ||
                     formData.currentPrice <= 0 ||
-                    !formData.packageContents?.trim() ||
                     (editId && !hasChanges())
                   }
                   className={`px-6 py-3 rounded-lg font-medium transition-colors ${
                     formData.name?.trim() &&
                     formData.currentPrice &&
                     formData.currentPrice > 0 &&
-                    formData.packageContents?.trim() &&
                     (!editId || hasChanges())
                       ? "bg-purple-600 hover:bg-purple-700 text-white"
                       : "bg-gray-400 text-white cursor-not-allowed"
@@ -812,23 +932,12 @@ const TestProduct = () => {
                 >
                   <div className="relative h-40 overflow-hidden">
                     <img
-                      src={product.image || noImage}
+                      src={product.main_image || noImage}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
                     {/* Badges */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      {product.popular && (
-                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-                          Popular
-                        </span>
-                      )}
-                      {product.new_arrival && (
-                        <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
-                          New
-                        </span>
-                      )}
-                    </div>
+                    <div className="absolute top-2 left-2 flex flex-col gap-1"></div>
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-900 text-lg mb-1">
@@ -845,12 +954,17 @@ const TestProduct = () => {
                           </span>
                         )}
                         <span className="text-purple-600 font-semibold">
-                          ₹{product.current_price}
+                          ₹{product.price}
                         </span>
                       </div>
-                      {product.discount && (
+                      {product.has_own_discount && product.own_discount_percentage && (
                         <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
-                          {product.discount}% OFF
+                          {product.own_discount_percentage}% OFF
+                        </span>
+                      )}
+                      {!product.has_own_discount && categories.find(c => c.id === product.category_id)?.offer_type === 'discount' && (
+                        <span className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded">
+                          {categories.find(c => c.id === product.category_id)?.offer_percentage}% OFF (Category)
                         </span>
                       )}
                     </div>

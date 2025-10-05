@@ -5,12 +5,14 @@ import {
   Package,
   ShoppingCart,
   Settings,
+  Ticket,
   Menu,
   X,
 } from "lucide-react";
 import RevenueAnalysis from "./RevenueAnalysis";
 import TestAdminCategories from "./TestAdminCategories";
 import TestProduct from "./TestProdict";
+import AdminCoupons from "./AdminCoupons";
 import AdminOrders from "./AdminOrders";
 import LogoutButton from "./Logout";
 import { AppContext } from "../../context/AppContext";
@@ -26,6 +28,7 @@ const Sidebar = ({
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "categories", label: "Categories", icon: FolderOpen },
     { id: "products", label: "Products", icon: Package },
+    { id: "coupons", label: "Coupons", icon: Ticket },
     { id: "orders", label: "Orders", icon: ShoppingCart },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -197,6 +200,20 @@ const ProductsContent = () => (
   </div>
 );
 
+const CouponsContent = () => (
+  <div className="lg:p-8 ">
+    <h2 className="text-2xl font-semibold text-gray-900 mb-8 mt-[20px] sm:mt-0">
+      Coupons
+    </h2>
+
+    <div className=" rounded-lg  ">
+      <p className="text-gray-600">
+        <AdminCoupons />
+      </p>
+    </div>
+  </div>
+);
+
 const OrdersContent = () => (
   <div className="lg:p-8 ">
     <h2 className="text-2xl font-semibold text-gray-900 mb-8 mt-[20px] sm:mt-0">
@@ -236,6 +253,8 @@ const AdminDashboard = () => {
         return <CategoriesContent />;
       case "products":
         return <ProductsContent />;
+      case "coupons":
+        return <CouponsContent />;
       case "orders":
         return <OrdersContent />;
       case "settings":
