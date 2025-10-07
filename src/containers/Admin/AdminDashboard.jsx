@@ -10,9 +10,8 @@ import {
   X,
 } from "lucide-react";
 import RevenueAnalysis from "./RevenueAnalysis";
-import AdminCategories from "./AdminCategories";
 import AdminCategoriesConsistent from "./AdminCategoriesConsistent";
-import TestProduct from "./TestProdict";
+import AdminProductsSimple from "./AdminProductsSimple";
 import AdminCoupons from "./AdminCoupons";
 import AdminOrders from "./AdminOrders";
 import LogoutButton from "./Logout";
@@ -187,7 +186,7 @@ const ProductsContent = () => (
 
     <div className=" rounded-lg  ">
       <p className="text-gray-600">
-        <TestProduct />
+        <AdminProductsSimple />
       </p>
     </div>
   </div>

@@ -1,30 +1,23 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Search, Plus, Edit2, Trash2, X, AlertTriangle, FolderOpen, BookOpen, GraduationCap, Percent, DollarSign, ChevronDown } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Search, Plus, Edit2, Trash2, X, AlertTriangle, FolderOpen, Percent, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../supabaseClient";
 import Loader from "./Loader";
 
 export default function AdminCategories() {
   // State management
-  const [subCategories, setSubCategories] = useState([]);
-  const [classes, setClasses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [classDropdownOpen, setClassDropdownOpen] = useState(false);
-  const classDropdownRef = useRef(null);
 
-  // Form data - NEW STRUCTURE
+  // Form data - SIMPLIFIED STRUCTURE
   const [formData, setFormData] = useState({
     main_category_name: "",  // User can type any name
-    sub_categories: [],      // Sample Paper, Textbook
-    classes: [],            // 1st to 12th
     offer_type: "none",     // none, percentage, flat_amount
     offer_percentage: "",
-    offer_amount: "",
-    description: ""
+    offer_amount: ""
   });
 
   // Delete modal
@@ -36,36 +29,18 @@ export default function AdminCategories() {
     fetchAllData();
   }, []);
 
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (classDropdownRef.current && !classDropdownRef.current.contains(event.target)) {
-        setClassDropdownOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   async function fetchAllData() {
     setLoading(true);
     try {
-      // Fetch required data
-      const [subCatResult, classesResult, categoriesResult] = await Promise.all([
-        supabase.from("sub_categories").select("*").eq("is_active", true).order("name"),
-        supabase.from("classes").select("*").eq("is_active", true).order("class_number"),
-        supabase.from("category_details").select("*").order("created_at", { ascending: false })
-      ]);
+      // Fetch categories only
+      const categoriesResult = await supabase
+        .from("category_details")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (subCatResult.error) throw subCatResult.error;
-      if (classesResult.error) throw classesResult.error;
       if (categoriesResult.error) throw categoriesResult.error;
 
-      setSubCategories(subCatResult.data || []);
-      setClasses(classesResult.data || []);
       setCategories(categoriesResult.data || []);
     } catch (err) {
       console.error(err);
@@ -81,14 +56,6 @@ export default function AdminCategories() {
     // Validation
     if (!formData.main_category_name.trim()) {
       toast.error("Please enter a main category name!");
-      return;
-    }
-    if (formData.sub_categories.length === 0) {
-      toast.error("Please select at least one sub-category!");
-      return;
-    }
-    if (formData.classes.length === 0) {
-      toast.error("Please select at least one class!");
       return;
     }
 
@@ -108,22 +75,8 @@ export default function AdminCategories() {
 
     setLoading(true);
     try {
-      // Generate display name and slug
-      const { data: nameData, error: nameError } = await supabase.rpc('generate_category_display_name_slug', {
-        p_main_category_name: formData.main_category_name.trim(),
-        p_sub_categories: formData.sub_categories.map(id => parseInt(id)),
-        p_classes: formData.classes.map(id => parseInt(id))
-      });
-
-      if (nameError) throw nameError;
-      const { display_name, display_slug } = nameData[0];
-
       const payload = {
         main_category_name: formData.main_category_name.trim(),
-        sub_categories: formData.sub_categories.map(id => parseInt(id)),
-        classes: formData.classes.map(id => parseInt(id)),
-        name: display_name,
-        slug: display_slug,
         offer_type: formData.offer_type,
         offer_percentage: formData.offer_type === 'percentage' ? parseFloat(formData.offer_percentage) : 0,
         offer_amount: formData.offer_type === 'flat_amount' ? parseFloat(formData.offer_amount) : 0
@@ -169,12 +122,9 @@ export default function AdminCategories() {
 
       setFormData({
         main_category_name: data.main_category_name || "",
-        sub_categories: data.sub_categories?.map(id => id.toString()) || [],
-        classes: data.classes?.map(id => id.toString()) || [],
         offer_type: data.offer_type || "none",
         offer_percentage: data.offer_percentage || "",
-        offer_amount: data.offer_amount || "",
-        description: data.description || ""
+        offer_amount: data.offer_amount || ""
       });
       setEditId(category.id);
       setShowForm(true);
@@ -210,37 +160,16 @@ export default function AdminCategories() {
   const resetForm = () => {
     setFormData({
       main_category_name: "",
-      sub_categories: [],
-      classes: [],
       offer_type: "none",
       offer_percentage: "",
-      offer_amount: "",
-      description: ""
+      offer_amount: ""
     });
     setEditId(null);
     setShowForm(false);
   };
 
-  const handleSubCategoryChange = (subCatId) => {
-    setFormData(prev => ({
-      ...prev,
-      sub_categories: prev.sub_categories.includes(subCatId)
-        ? prev.sub_categories.filter(id => id !== subCatId)
-        : [...prev.sub_categories, subCatId]
-    }));
-  };
-
-  const handleClassChange = (classId) => {
-    setFormData(prev => ({
-      ...prev,
-      classes: prev.classes.includes(classId)
-        ? prev.classes.filter(id => id !== classId)
-        : [...prev.classes, classId]
-    }));
-  };
 
   const filteredCategories = categories.filter((category) =>
-    category.category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     category.main_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -335,107 +264,6 @@ export default function AdminCategories() {
                 </div>
               )}
 
-              {/* Sub Categories Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Sub Categories <span className="text-red-500">*</span>
-                  <span className="text-xs text-gray-500 ml-2">(Select one or both)</span>
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  {subCategories.map((subCat) => (
-                    <label key={subCat.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.sub_categories.includes(subCat.id.toString())}
-                        onChange={() => handleSubCategoryChange(subCat.id.toString())}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <BookOpen className="w-5 h-5 text-blue-500" />
-                      <span className="text-sm font-medium text-gray-900">{subCat.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Classes Selection */}
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Classes <span className="text-red-500">*</span>
-                  <span className="text-xs text-gray-500 ml-2">(Multi-select)</span>
-                </label>
-
-                {/* Multi-select Dropdown */}
-                <div className="relative" ref={classDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setClassDropdownOpen(!classDropdownOpen)}
-                    className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors flex items-center justify-between"
-                  >
-                    <span className="text-sm text-gray-900">
-                      {formData.classes.length === 0
-                        ? "Select classes..."
-                        : `${formData.classes.length} class${formData.classes.length === 1 ? '' : 'es'} selected`
-                      }
-                    </span>
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${classDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {classDropdownOpen && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
-
-                      {/* Options List */}
-                      <div className="p-2">
-                        {classes.map((cls) => (
-                          <label
-                            key={cls.id}
-                            className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.classes.includes(cls.id.toString())}
-                              onChange={() => handleClassChange(cls.id.toString())}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <GraduationCap className="w-4 h-4 text-green-500" />
-                            <span className="text-sm font-medium text-gray-900">{cls.display_name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Selected Classes Preview */}
-                {formData.classes.length > 0 && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <span className="text-xs font-medium text-gray-600">
-                      Selected Classes ({formData.classes.length}):
-                    </span>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {classes
-                        .filter(cls => formData.classes.includes(cls.id.toString()))
-                        .sort((a, b) => a.class_number - b.class_number)
-                        .map((cls) => (
-                          <span
-                            key={cls.id}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                          >
-                            <GraduationCap className="w-3 h-3 mr-1" />
-                            {cls.display_name}
-                            <button
-                              type="button"
-                              onClick={() => handleClassChange(cls.id.toString())}
-                              className="ml-1 text-blue-600 hover:text-blue-800"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {/* Actions - Consistent with AdminCoupons */}
               <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
@@ -480,92 +308,53 @@ export default function AdminCategories() {
             </div>
           </div>
 
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <FolderOpen className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-gray-900">{category.main_category_name}</h3>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEdit(category)}
-                        className="text-blue-600 hover:text-blue-800"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openDeleteModal(category.id, category.main_category_name)}
-                        className="text-red-600 hover:text-red-800"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{category.category_name}</p>
-
-                  <div className="space-y-3">
-                    {/* Sub Categories */}
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Sub Categories:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {category.sub_category_names?.map((subCat, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            <BookOpen className="w-3 h-3 mr-1" />
-                            {subCat}
-                          </span>
-                        ))}
+          {/* Table Format */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Category Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Offer
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCategories.map((category) => (
+                  <tr key={category.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2">
+                        <FolderOpen className="w-4 h-4 text-blue-600" />
+                        <h3 className="text-sm font-medium text-gray-900">{category.main_category_name}</h3>
                       </div>
-                    </div>
-
-                    {/* Classes */}
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Classes:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {category.class_names?.slice(0, 3).map((className, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <GraduationCap className="w-3 h-3 mr-1" />
-                            {className}
-                          </span>
-                        ))}
-                        {category.class_names?.length > 3 && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            +{category.class_names.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Offer */}
-                    <div className="flex items-center space-x-2">
+                    </td>
+                    <td className="px-6 py-4">
                       {category.offer_type === 'none' ? (
-                        <>
-                          <span className="w-4 h-4 text-gray-400">🚫</span>
-                          <span className="text-sm text-gray-600">No Offer</span>
-                        </>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="w-3 h-3 mr-1">🚫</span>
+                          No Offer
+                        </span>
                       ) : category.offer_type === 'percentage' ? (
-                        <>
-                          <Percent className="w-4 h-4 text-orange-600" />
-                          <span className="text-sm text-gray-600">{category.offer_percentage}% OFF</span>
-                        </>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          <Percent className="w-3 h-3 mr-1" />
+                          {category.offer_percentage}% OFF
+                        </span>
                       ) : (
-                        <>
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          <span className="text-sm text-gray-600">₹{category.offer_amount} OFF</span>
-                        </>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <DollarSign className="w-3 h-3 mr-1" />
+                          ₹{category.offer_amount} OFF
+                        </span>
                       )}
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex items-center justify-between">
+                    </td>
+                    <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         category.is_active
                           ? "bg-green-100 text-green-800"
@@ -573,11 +362,29 @@ export default function AdminCategories() {
                       }`}>
                         {category.is_active ? "Active" : "Inactive"}
                       </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => handleEdit(category)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit category"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(category.id, category.main_category_name)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete category"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
             {filteredCategories.length === 0 && (
               <div className="text-center py-12">
