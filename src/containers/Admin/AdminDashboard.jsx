@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import RevenueAnalysis from "./RevenueAnalysis";
-import TestAdminCategories from "./TestAdminCategories";
+import AdminCategories from "./AdminCategories";
 import TestProduct from "./TestProdict";
 import AdminCoupons from "./AdminCoupons";
 import AdminOrders from "./AdminOrders";
@@ -174,15 +174,7 @@ const DashboardContent = () => {
 // Generic Content Components
 const CategoriesContent = () => (
   <div className="lg:p-8 ">
-    <h2 className="text-2xl font-semibold text-gray-900 mb-8 mt-[20px] sm:mt-0">
-      Categories
-    </h2>
-
-    <div className=" rounded-lg  ">
-      <p className="text-gray-600">
-        <TestAdminCategories />
-      </p>
-    </div>
+    <AdminCategories />
   </div>
 );
 

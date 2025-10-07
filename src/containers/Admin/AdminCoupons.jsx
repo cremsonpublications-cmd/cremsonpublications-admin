@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, Edit2, Trash2, X, AlertTriangle, Ticket, Calendar, DollarSign } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, X, AlertTriangle, Ticket, Calendar, DollarSign, Percent } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { supabase } from "../../supabaseClient";
 import Loader from "./Loader";
@@ -13,11 +13,18 @@ const AdminCoupons = () => {
 
   const [formData, setFormData] = useState({
     code: "",
+    discount_type: "percentage", // 'percentage' or 'flat_amount'
     discount_value: "",
     minimum_order_amount: "",
+    maximum_discount_amount: "", // Only for percentage discounts
+    applicable_categories: [],
+    valid_from: "",
     valid_until: "",
+    usage_limit: "",
     description: ""
   });
+
+  const [categories, setCategories] = useState([]);
 
   const [originalData, setOriginalData] = useState({});
 
@@ -28,6 +35,7 @@ const AdminCoupons = () => {
 
   useEffect(() => {
     fetchCoupons();
+    fetchCategories();
   }, []);
 
   async function fetchCoupons() {
@@ -54,6 +62,20 @@ const AdminCoupons = () => {
     }
   }
 
+  async function fetchCategories() {
+    try {
+      const { data, error } = await supabase
+        .from("category_details")
+        .select("id, category_name")
+        .eq("is_active", true);
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch categories");
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.code?.trim()) {
@@ -65,13 +87,28 @@ const AdminCoupons = () => {
       return;
     }
 
+    // Validation for percentage discount
+    if (formData.discount_type === 'percentage') {
+      if (formData.discount_value > 100) {
+        toast.error("Percentage discount cannot exceed 100%!");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const payload = {
         code: formData.code.toUpperCase(),
+        discount_type: formData.discount_type,
         discount_value: parseFloat(formData.discount_value),
         minimum_order_amount: formData.minimum_order_amount ? parseFloat(formData.minimum_order_amount) : null,
+        maximum_discount_amount: formData.discount_type === 'percentage' && formData.maximum_discount_amount
+          ? parseFloat(formData.maximum_discount_amount) : null,
+        applicable_categories: formData.applicable_categories.length > 0
+          ? formData.applicable_categories.map(id => parseInt(id)) : null,
+        valid_from: formData.valid_from || null,
         valid_until: formData.valid_until || null,
+        usage_limit: formData.usage_limit ? parseInt(formData.usage_limit) : null,
         description: formData.description || null
       };
 
