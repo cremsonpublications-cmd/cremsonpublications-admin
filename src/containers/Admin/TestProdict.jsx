@@ -57,7 +57,7 @@ const TestProduct = () => {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name)");
+        .select("*, categories(main_category_name)");
       if (error) throw error;
       setProducts(data || []);
     } catch (err) {

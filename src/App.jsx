@@ -112,7 +112,7 @@ export default function App() {
   async function fetchProducts() {
     const { data, error } = await supabase
       .from("products")
-      .select("*, categories(name)");
+      .select("*, categories(main_category_name)");
     if (error) console.error(error);
     else setProducts(data);
   }

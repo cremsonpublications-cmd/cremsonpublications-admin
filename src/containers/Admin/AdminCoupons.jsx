@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, Edit2, Trash2, X, AlertTriangle, Ticket, Calendar, DollarSign, Percent } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  AlertTriangle,
+  Ticket,
+  Calendar,
+  DollarSign,
+  Percent,
+} from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { supabase } from "../../supabaseClient";
 import Loader from "./Loader";
@@ -18,10 +29,13 @@ const AdminCoupons = () => {
     minimum_order_amount: "",
     maximum_discount_amount: "", // Only for percentage discounts
     applicable_categories: [],
+    // Delivery charge features
+    free_delivery: false,
+    delivery_discount_amount: "",
     valid_from: "",
     valid_until: "",
     usage_limit: "",
-    description: ""
+    description: "",
   });
 
   const [categories, setCategories] = useState([]);
@@ -43,14 +57,36 @@ const AdminCoupons = () => {
     try {
       const { data, error } = await supabase
         .from("coupons")
-        .select("*")
+        .select(
+          `
+          id,
+          code,
+          discount_type,
+          discount_value,
+          minimum_order_amount,
+          maximum_discount_amount,
+          applicable_categories,
+          free_delivery,
+          delivery_discount_amount,
+          valid_from,
+          valid_until,
+          usage_limit,
+          used_count,
+          is_active,
+          description,
+          created_at,
+          updated_at
+        `
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
 
       // Add isExpired field to each coupon
-      const couponsWithExpiredStatus = (data || []).map(coupon => ({
+      const couponsWithExpiredStatus = (data || []).map((coupon) => ({
         ...coupon,
-        isExpired: coupon.valid_until ? new Date(coupon.valid_until) < new Date() : false
+        isExpired: coupon.valid_until
+          ? new Date(coupon.valid_until) < new Date()
+          : false,
       }));
 
       setCoupons(couponsWithExpiredStatus);
@@ -66,7 +102,7 @@ const AdminCoupons = () => {
     try {
       const { data, error } = await supabase
         .from("category_details")
-        .select("id, category_name")
+        .select("id, main_category_name")
         .eq("is_active", true);
       if (error) throw error;
       setCategories(data || []);
@@ -82,13 +118,23 @@ const AdminCoupons = () => {
       toast.error("Coupon code is required!");
       return;
     }
-    if (!formData.discount_value || formData.discount_value <= 0) {
-      toast.error("Discount value is required!");
+
+    // Check if at least one benefit is provided
+    const hasDiscount = formData.discount_value && formData.discount_value > 0;
+    const hasFreeDelivery = formData.free_delivery;
+    const hasDeliveryDiscount =
+      formData.delivery_discount_amount &&
+      formData.delivery_discount_amount > 0;
+
+    if (!hasDiscount && !hasFreeDelivery && !hasDeliveryDiscount) {
+      toast.error(
+        "Please provide at least one benefit: discount value, free delivery, or delivery discount!"
+      );
       return;
     }
 
     // Validation for percentage discount
-    if (formData.discount_type === 'percentage') {
+    if (hasDiscount && formData.discount_type === "percentage") {
       if (formData.discount_value > 100) {
         toast.error("Percentage discount cannot exceed 100%!");
         return;
@@ -100,16 +146,32 @@ const AdminCoupons = () => {
       const payload = {
         code: formData.code.toUpperCase(),
         discount_type: formData.discount_type,
-        discount_value: parseFloat(formData.discount_value),
-        minimum_order_amount: formData.minimum_order_amount ? parseFloat(formData.minimum_order_amount) : null,
-        maximum_discount_amount: formData.discount_type === 'percentage' && formData.maximum_discount_amount
-          ? parseFloat(formData.maximum_discount_amount) : null,
-        applicable_categories: formData.applicable_categories.length > 0
-          ? formData.applicable_categories.map(id => parseInt(id)) : null,
+        discount_value: formData.discount_value
+          ? parseFloat(formData.discount_value)
+          : 0,
+        minimum_order_amount: formData.minimum_order_amount
+          ? parseFloat(formData.minimum_order_amount)
+          : null,
+        maximum_discount_amount:
+          formData.discount_type === "percentage" &&
+          formData.maximum_discount_amount
+            ? parseFloat(formData.maximum_discount_amount)
+            : null,
+        applicable_categories:
+          formData.applicable_categories.length > 0
+            ? formData.applicable_categories.map((id) => parseInt(id))
+            : null,
+        // Delivery charge features
+        free_delivery: formData.free_delivery,
+        delivery_discount_amount: formData.delivery_discount_amount
+          ? parseFloat(formData.delivery_discount_amount)
+          : 0,
         valid_from: formData.valid_from || null,
         valid_until: formData.valid_until || null,
-        usage_limit: formData.usage_limit ? parseInt(formData.usage_limit) : null,
-        description: formData.description || null
+        usage_limit: formData.usage_limit
+          ? parseInt(formData.usage_limit)
+          : null,
+        description: formData.description || null,
       };
 
       if (editId) {
@@ -142,10 +204,18 @@ const AdminCoupons = () => {
   const handleEdit = (coupon) => {
     setFormData({
       code: coupon.code,
+      discount_type: coupon.discount_type,
       discount_value: coupon.discount_value,
       minimum_order_amount: coupon.minimum_order_amount || "",
-      valid_until: coupon.valid_until ? coupon.valid_until.split('T')[0] : "",
-      description: coupon.description || ""
+      maximum_discount_amount: coupon.maximum_discount_amount || "",
+      applicable_categories: coupon.applicable_categories || [],
+      // Delivery charge features
+      free_delivery: coupon.free_delivery || false,
+      delivery_discount_amount: coupon.delivery_discount_amount || "",
+      valid_from: coupon.valid_from ? coupon.valid_from.split("T")[0] : "",
+      valid_until: coupon.valid_until ? coupon.valid_until.split("T")[0] : "",
+      usage_limit: coupon.usage_limit || "",
+      description: coupon.description || "",
     });
     setOriginalData(coupon);
     setEditId(coupon.id);
@@ -178,21 +248,30 @@ const AdminCoupons = () => {
   const resetForm = () => {
     setFormData({
       code: "",
+      discount_type: "percentage",
       discount_value: "",
       minimum_order_amount: "",
+      maximum_discount_amount: "",
+      applicable_categories: [],
+      // Delivery charge features
+      free_delivery: false,
+      delivery_discount_amount: "",
+      valid_from: "",
       valid_until: "",
-      description: ""
+      usage_limit: "",
+      description: "",
     });
     setOriginalData({});
     setEditId(null);
     setShowForm(false);
   };
 
-  const filteredCoupons = coupons.filter((coupon) =>
-    coupon.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (coupon.description && coupon.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredCoupons = coupons.filter(
+    (coupon) =>
+      coupon.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (coupon.description &&
+        coupon.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
 
   return (
     <div className="bg-gray-50">
@@ -240,13 +319,15 @@ const AdminCoupons = () => {
                     type="text"
                     value={formData.code}
                     onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                      setFormData({
+                        ...formData,
+                        code: e.target.value.toUpperCase(),
+                      })
                     }
                     placeholder="Enter coupon code (e.g., WELCOME10)"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                   />
                 </div>
-
 
                 {/* Discount Value */}
                 <div>
@@ -257,9 +338,16 @@ const AdminCoupons = () => {
                     type="number"
                     value={formData.discount_value}
                     onChange={(e) =>
-                      setFormData({ ...formData, discount_value: e.target.value })
+                      setFormData({
+                        ...formData,
+                        discount_value: e.target.value,
+                      })
                     }
-                    placeholder={formData.discount_type === 'percentage' ? 'Enter percentage (e.g., 10)' : 'Enter amount (e.g., 50)'}
+                    placeholder={
+                      formData.discount_type === "percentage"
+                        ? "Enter percentage (e.g., 10)"
+                        : "Enter amount (e.g., 50)"
+                    }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                   />
                 </div>
@@ -273,7 +361,10 @@ const AdminCoupons = () => {
                     type="number"
                     value={formData.minimum_order_amount}
                     onChange={(e) =>
-                      setFormData({ ...formData, minimum_order_amount: e.target.value })
+                      setFormData({
+                        ...formData,
+                        minimum_order_amount: e.target.value,
+                      })
                     }
                     placeholder="Enter minimum amount"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
@@ -293,6 +384,94 @@ const AdminCoupons = () => {
                     }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                   />
+                </div>
+              </div>
+
+              {/* Delivery Options */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Delivery Options (Optional)
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Free Delivery */}
+                  <div>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="free_delivery"
+                        checked={formData.free_delivery}
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            free_delivery: e.target.checked,
+                            // Clear delivery discount amount when free delivery is selected
+                            delivery_discount_amount: e.target.checked
+                              ? ""
+                              : formData.delivery_discount_amount,
+                          });
+                        }}
+                        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <label
+                        htmlFor="free_delivery"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Free Delivery
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Customer gets free delivery (can combine with coupon
+                      discount)
+                    </p>
+                  </div>
+
+                  {/* Delivery Discount Amount */}
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${
+                        formData.free_delivery
+                          ? "text-gray-400"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      Delivery Discount Amount (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.delivery_discount_amount}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          delivery_discount_amount: e.target.value,
+                          // Clear free delivery when discount amount is entered
+                          free_delivery: e.target.value
+                            ? false
+                            : formData.free_delivery,
+                        });
+                      }}
+                      placeholder="Enter delivery discount amount"
+                      disabled={formData.free_delivery}
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors ${
+                        formData.free_delivery
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : "bg-white"
+                      }`}
+                    />
+                    <p
+                      className={`text-xs mt-1 ${
+                        formData.free_delivery
+                          ? "text-gray-400"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {formData.free_delivery
+                        ? "Disabled when free delivery is selected"
+                        : "Discount on delivery charges (can combine with coupon discount)"}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -323,14 +502,27 @@ const AdminCoupons = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !formData.code?.trim() || !formData.discount_value}
+                  disabled={
+                    loading ||
+                    !formData.code?.trim() ||
+                    (!formData.discount_value &&
+                      !formData.free_delivery &&
+                      !formData.delivery_discount_amount)
+                  }
                   className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                    formData.code?.trim() && formData.discount_value
+                    formData.code?.trim() &&
+                    (formData.discount_value ||
+                      formData.free_delivery ||
+                      formData.delivery_discount_amount)
                       ? "bg-purple-600 hover:bg-purple-700 text-white"
                       : "bg-gray-400 text-white cursor-not-allowed"
                   }`}
                 >
-                  {loading ? "Saving..." : editId ? "Update Coupon" : "Save Coupon"}
+                  {loading
+                    ? "Saving..."
+                    : editId
+                    ? "Update Coupon"
+                    : "Save Coupon"}
                 </button>
               </div>
             </form>
@@ -341,7 +533,9 @@ const AdminCoupons = () => {
         <div className="bg-white rounded-lg shadow-lg border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h2 className="text-xl font-semibold text-gray-900">All Coupons</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                All Coupons
+              </h2>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -365,11 +559,15 @@ const AdminCoupons = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-2">
                       <Ticket className="w-5 h-5 text-purple-600" />
-                      <h3 className="font-semibold text-gray-900">{coupon.code}</h3>
+                      <h3 className="font-semibold text-gray-900">
+                        {coupon.code}
+                      </h3>
                     </div>
                     <div className="flex items-center space-x-2">
                       {coupon.isExpired && (
-                        <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">Expired</span>
+                        <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
+                          Expired
+                        </span>
                       )}
                       <button
                         onClick={() => handleEdit(coupon)}
@@ -389,24 +587,64 @@ const AdminCoupons = () => {
                   </div>
 
                   {coupon.description && (
-                    <p className="text-gray-600 text-sm mb-3">{coupon.description}</p>
+                    <p className="text-gray-600 text-sm mb-3">
+                      {coupon.description}
+                    </p>
                   )}
 
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="w-4 h-4 text-green-600" />
-                      <span className="text-sm text-gray-600">
-                        ₹{coupon.discount_value} off
-                      </span>
+                  <div className="space-y-3">
+                    {/* Coupon Benefits Section */}
+                    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                      <h4 className="text-xs font-semibold text-gray-700 uppercase">Benefits:</h4>
+                      
+                      {/* Discount Offer - Only show if discount value exists and is greater than 0 */}
+                      {coupon.discount_value && coupon.discount_value > 0 && (
+                        <div className="flex items-center space-x-2">
+                         
+                          <span className="text-sm font-medium text-gray-900">
+                          { `₹${coupon.discount_value} off on order`}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Free Delivery */}
+                      {coupon.free_delivery && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600 text-lg">🚚</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            Free Delivery
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Delivery Discount */}
+                      {coupon.delivery_discount_amount > 0 && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600 text-lg">📦</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            ₹{coupon.delivery_discount_amount} off on delivery
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    {coupon.minimum_order_amount && (
-                      <p className="text-xs text-gray-500">
-                        Min order: ₹{coupon.minimum_order_amount}
-                      </p>
+                    {/* Order Conditions */}
+                    {(coupon.minimum_order_amount || (coupon.maximum_discount_amount && coupon.discount_type === "percentage")) && (
+                      <div className="space-y-1">
+                        {coupon.minimum_order_amount && (
+                          <p className="text-xs text-gray-600">
+                            📌 Min order: ₹{coupon.minimum_order_amount}
+                          </p>
+                        )}
+                        {coupon.maximum_discount_amount && coupon.discount_type === "percentage" && (
+                          <p className="text-xs text-gray-600">
+                            🎯 Max discount: ₹{coupon.maximum_discount_amount}
+                          </p>
+                        )}
+                      </div>
                     )}
 
-
+                    {/* Validity */}
                     {coupon.valid_until && (
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-3 h-3 text-gray-400" />
@@ -436,10 +674,13 @@ const AdminCoupons = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center mb-4">
               <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Delete Coupon</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Delete Coupon
+              </h3>
             </div>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete the coupon "{deletingName}"? This action cannot be undone.
+              Are you sure you want to delete the coupon "{deletingName}"? This
+              action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button

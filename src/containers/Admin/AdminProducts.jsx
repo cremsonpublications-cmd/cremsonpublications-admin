@@ -20,7 +20,7 @@ export default function AdminProducts() {
   async function fetchProducts() {
     const { data, error } = await supabase
       .from("products")
-      .select("*, categories(name)");
+      .select("*, categories(main_category_name)");
     if (error) console.error(error);
     else setProducts(data);
   }
@@ -348,7 +348,7 @@ export default function AdminProducts() {
               </td>
               <td className="border p-2">{p.name}</td>
               <td className="border p-2">
-                {p.categories ? p.categories.name : p.category_id}
+                {p.categories ? p.categories.main_category_name : p.category_id}
               </td>
               <td className="border p-2">₹{p.current_price}</td>
               <td className="border p-2">{p.stock}</td>
