@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import RevenueAnalysis from "./RevenueAnalysis";
 import AdminCategories from "./AdminCategories";
+import AdminCategoriesConsistent from "./AdminCategoriesConsistent";
 import TestProduct from "./TestProdict";
 import AdminCoupons from "./AdminCoupons";
 import AdminOrders from "./AdminOrders";
@@ -174,7 +175,7 @@ const DashboardContent = () => {
 // Generic Content Components
 const CategoriesContent = () => (
   <div className="lg:p-8 ">
-    <AdminCategories />
+    <AdminCategoriesConsistent />
   </div>
 );
 

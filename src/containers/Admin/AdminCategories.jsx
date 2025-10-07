@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, Edit2, Trash2, X, AlertTriangle, FolderOpen, BookOpen, GraduationCap } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, X, AlertTriangle, FolderOpen, BookOpen, GraduationCap, Percent, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../supabaseClient";
+import Loader from "./Loader";
 
 export default function AdminCategories() {
   // State management
