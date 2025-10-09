@@ -7,7 +7,7 @@ import Loader from "./Loader";
 import { supabase } from "../../supabaseClient";
 import { AppContext } from "../../context/AppContext";
 
-const CLOUD_NAME = "dkxxa3xt0";
+const CLOUD_NAME = "dp3xbptsx";
 const UPLOAD_PRESET = "unsigned_preset";
 
 const TestProduct = () => {
