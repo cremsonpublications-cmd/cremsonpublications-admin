@@ -24,10 +24,11 @@ const AdminCoupons = () => {
 
   const [formData, setFormData] = useState({
     code: "",
-    discount_type: "percentage", // 'percentage' or 'flat_amount'
+    discount_type: "percentage", // 'percentage' or 'fixed'
     discount_value: "",
     minimum_order_amount: "",
     maximum_discount_amount: "", // Only for percentage discounts
+    show_in_ui: true, // Whether to show in user interface
     applicable_categories: [],
     // Delivery charge features
     free_delivery: false,
@@ -57,27 +58,25 @@ const AdminCoupons = () => {
     try {
       const { data, error } = await supabase
         .from("coupons")
-        .select(
-          `
+        .select(`
           id,
           code,
           discount_type,
           discount_value,
           minimum_order_amount,
           maximum_discount_amount,
+          show_in_ui,
           applicable_categories,
           free_delivery,
           delivery_discount_amount,
           valid_from,
           valid_until,
           usage_limit,
-          used_count,
           is_active,
           description,
           created_at,
           updated_at
-        `
-        )
+        `)
         .order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -157,6 +156,7 @@ const AdminCoupons = () => {
           formData.maximum_discount_amount
             ? parseFloat(formData.maximum_discount_amount)
             : null,
+        show_in_ui: formData.show_in_ui,
         applicable_categories:
           formData.applicable_categories.length > 0
             ? formData.applicable_categories.map((id) => parseInt(id))
@@ -208,6 +208,7 @@ const AdminCoupons = () => {
       discount_value: coupon.discount_value,
       minimum_order_amount: coupon.minimum_order_amount || "",
       maximum_discount_amount: coupon.maximum_discount_amount || "",
+      show_in_ui: coupon.show_in_ui !== undefined ? coupon.show_in_ui : true,
       applicable_categories: coupon.applicable_categories || [],
       // Delivery charge features
       free_delivery: coupon.free_delivery || false,
@@ -252,6 +253,7 @@ const AdminCoupons = () => {
       discount_value: "",
       minimum_order_amount: "",
       maximum_discount_amount: "",
+      show_in_ui: true,
       applicable_categories: [],
       // Delivery charge features
       free_delivery: false,
@@ -264,6 +266,21 @@ const AdminCoupons = () => {
     setOriginalData({});
     setEditId(null);
     setShowForm(false);
+  };
+
+  // Handle coupon code input with real-time validation
+  const handleCouponCodeChange = (e) => {
+    const value = e.target.value;
+    
+    // Keep only letters and numbers, remove spaces and special characters
+    const filteredValue = value
+      .replace(/[^A-Za-z0-9]/g, '') // Keep only alphanumeric characters
+      .toUpperCase(); // Convert to uppercase
+    
+    setFormData({
+      ...formData,
+      code: filteredValue,
+    });
   };
 
   const filteredCoupons = coupons.filter(
@@ -318,21 +335,41 @@ const AdminCoupons = () => {
                   <input
                     type="text"
                     value={formData.code}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        code: e.target.value.toUpperCase(),
-                      })
-                    }
+                    onChange={handleCouponCodeChange}
                     placeholder="Enter coupon code (e.g., WELCOME10)"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Only letters and numbers allowed. Spaces and special characters are automatically removed.
+                  </p>
+                </div>
+
+                {/* Discount Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Discount Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.discount_type}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        discount_type: e.target.value,
+                        // Clear max discount amount when switching to fixed
+                        maximum_discount_amount: e.target.value === "fixed" ? "" : formData.maximum_discount_amount,
+                      })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors bg-white"
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="fixed">Fixed Amount (₹)</option>
+                  </select>
                 </div>
 
                 {/* Discount Value */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Discount Value <span className="text-red-500">*</span>
+                    {formData.discount_type === "percentage" ? "Discount Percentage" : "Discount Amount"} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -369,6 +406,53 @@ const AdminCoupons = () => {
                     placeholder="Enter minimum amount"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
                   />
+                </div>
+
+                {/* Maximum Discount Amount - Only for percentage discounts */}
+                {formData.discount_type === "percentage" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Maximum Discount Amount (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.maximum_discount_amount}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          maximum_discount_amount: e.target.value,
+                        })
+                      }
+                      placeholder="Enter maximum discount cap"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Maximum amount that can be discounted (e.g., 10% of ₹1000 = ₹100, but cap at ₹50)
+                    </p>
+                  </div>
+                )}
+
+                {/* Show in UI Toggle */}
+                <div>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={formData.show_in_ui}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          show_in_ui: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Show in User Interface</span>
+                      <p className="text-xs text-gray-500">
+                        If unchecked, coupon will be hidden from users but can still be applied by typing the code
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Valid Until */}

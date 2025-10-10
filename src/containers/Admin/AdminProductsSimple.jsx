@@ -169,10 +169,6 @@ export default function AdminProductsSimple() {
       toast.error("Please enter a product name!");
       return;
     }
-    if (!formData.category_id) {
-      toast.error("Please select a category!");
-      return;
-    }
     if (!formData.mrp || formData.mrp <= 0) {
       toast.error("Please enter a valid MRP!");
       return;
@@ -182,7 +178,7 @@ export default function AdminProductsSimple() {
     try {
       const payload = {
         name: formData.name.trim(),
-        category_id: parseInt(formData.category_id),
+        category_id: formData.category_id ? parseInt(formData.category_id) : null,
         sub_categories:
           formData.sub_categories.length > 0 ? formData.sub_categories : null,
         classes: formData.classes.length > 0 ? formData.classes : null,
@@ -641,7 +637,7 @@ export default function AdminProductsSimple() {
                 {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category <span className="text-red-500">*</span>
+                    Category (Optional)
                   </label>
                   <select
                     value={formData.category_id}
@@ -652,7 +648,6 @@ export default function AdminProductsSimple() {
                       }))
                     }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
-                    required
                   >
                     <option value="">Select a category</option>
                     {categories.map((category) => (

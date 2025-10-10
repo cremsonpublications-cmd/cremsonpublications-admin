@@ -3,8 +3,6 @@ export const sendOrderUpdateEmail = async (orderData) => {
   try {
     // Brevo API key from environment variables
     const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
-    
-    // Email configuration - direct values
     const SENDER_EMAIL = "cremsonpublications@gmail.com";
     const SENDER_NAME = 'Cremson Publications';
     const ADMIN_EMAIL = "Info@cremsonpublications.com";
