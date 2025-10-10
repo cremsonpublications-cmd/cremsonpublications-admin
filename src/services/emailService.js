@@ -9,7 +9,8 @@ export const sendOrderUpdateEmail = async (orderData) => {
     
     // Check if API key is configured
     if (!BREVO_API_KEY) {
-      throw new Error('VITE_BREVO_API_KEY is not configured in environment variables');
+      console.warn('VITE_BREVO_API_KEY is not configured in environment variables');
+      return { success: false, message: 'Email service not configured' };
     }
     
     // Create HTML email template for order update
