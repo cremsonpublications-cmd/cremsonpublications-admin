@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { Toaster, toast } from "sonner";
 
 import {
@@ -41,7 +41,7 @@ const AdminOrders = () => {
   const [deletingOrderId, setDeletingOrderId] = useState("");
 
   // Fetch orders from Supabase
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.from("orders").select("*");
@@ -57,14 +57,14 @@ const AdminOrders = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setOrders]);
 
   useEffect(() => {
     if (!ordersFetched) {
       fetchOrders();
       setOrdersFetched(true); // mark as fetched to avoid repeated calls
     }
-  }, []);
+  }, [ordersFetched, setOrdersFetched, fetchOrders]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -108,6 +108,8 @@ const AdminOrders = () => {
         status: order.delivery?.status || "Processing",
         trackingId: order.delivery?.trackingId || "",
         expectedDate: order.delivery?.expectedDate || "",
+        courier: order.delivery?.courier || "",
+        trackingUrl: order.delivery?.trackingUrl || "",
       },
 
       // Address (modifiable)
@@ -159,6 +161,8 @@ const AdminOrders = () => {
           status: editForm.delivery.status,
           trackingId: editForm.delivery.trackingId,
           expectedDate: editForm.delivery.expectedDate,
+          courier: editForm.delivery.courier,
+          trackingUrl: editForm.delivery.trackingUrl,
         },
         user_info: {
           ...editingOrder.user_info,
@@ -471,6 +475,27 @@ const AdminOrders = () => {
                       <span className="font-mono text-xs md:text-sm break-all">
                         {selectedOrder.delivery?.trackingId}
                       </span>
+                    </div>
+                  )}
+                  {selectedOrder.delivery?.courier && (
+                    <div className="flex justify-between">
+                      <span className="text-sm md:text-base">Courier</span>
+                      <span className="text-sm md:text-base">
+                        {selectedOrder.delivery?.courier}
+                      </span>
+                    </div>
+                  )}
+                  {selectedOrder.delivery?.trackingUrl && (
+                    <div className="flex justify-between">
+                      <span className="text-sm md:text-base">Track Package</span>
+                      <a 
+                        href={selectedOrder.delivery?.trackingUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-purple-600 hover:text-purple-700 text-sm md:text-base underline"
+                      >
+                        Track Now
+                      </a>
                     </div>
                   )}
                 </div>
@@ -848,6 +873,60 @@ const AdminOrders = () => {
                           })
                         }
                         className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Courier Partner
+                      </label>
+                      <select
+                        value={editForm.delivery?.courier || ""}
+                        onChange={(e) => {
+                          const courierUrls = {
+                            "DTDC": "https://www.dtdc.com/track-your-shipment/",
+                            "Shadowfax": "https://www.shadowfax.in/track",
+                            "Delhivery": "https://www.delhivery.com/tracking",
+                            "Other": ""
+                          };
+                          setEditForm({
+                            ...editForm,
+                            delivery: {
+                              ...editForm.delivery,
+                              courier: e.target.value,
+                              trackingUrl: courierUrls[e.target.value] || "",
+                            },
+                          })
+                        }}
+                        className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                      >
+                        <option value="">Select Courier</option>
+                        <option value="DTDC">DTDC</option>
+                        <option value="Shadowfax">Shadowfax</option>
+                        <option value="Delhivery">Delhivery</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tracking URL
+                      </label>
+                      <input
+                        type="url"
+                        value={editForm.delivery?.trackingUrl || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            delivery: {
+                              ...editForm.delivery,
+                              trackingUrl: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        placeholder="Tracking URL (auto-filled based on courier)"
+                        readOnly={editForm.delivery?.courier && editForm.delivery?.courier !== "Other"}
                       />
                     </div>
                   </div>

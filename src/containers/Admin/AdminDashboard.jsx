@@ -126,14 +126,14 @@ const DashboardContent = () => {
       iconBg: "bg-yellow-100",
       textColor: "text-yellow-600",
     },
-    {
-      title: "Total Revenue",
-      value: "$318.89",
-      icon: "💰",
-      bgColor: "bg-red-50",
-      iconBg: "bg-red-100",
-      textColor: "text-red-600",
-    },
+    // {
+    //   title: "Total Revenue",
+    //   value: "$318.89",
+    //   icon: "💰",
+    //   bgColor: "bg-red-50",
+    //   iconBg: "bg-red-100",
+    //   textColor: "text-red-600",
+    // },
   ];
 
   return (
@@ -166,7 +166,7 @@ const DashboardContent = () => {
           </div>
         ))}
       </div>
-      <RevenueAnalysis />
+      {/* <RevenueAnalysis /> */}
     </div>
   );
 };
