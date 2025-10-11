@@ -16,6 +16,7 @@ import AdminCoupons from "./AdminCoupons";
 import AdminOrders from "./AdminOrders";
 import LogoutButton from "./Logout";
 import { AppContext } from "../../context/AppContext";
+import cpLogo from "../../assets/CP-Logo.png";
 
 // Sidebar Component
 const Sidebar = ({
@@ -53,9 +54,11 @@ const Sidebar = ({
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h1 className="text-xl font-semibold text-purple-600">
-                Crackers Admin
-              </h1>
+              <img
+                src={cpLogo}
+                alt="Cremson Publications"
+                className="h-10 w-auto"
+              />
               <button
                 className="lg:hidden text-gray-500 hover:text-gray-700"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -101,6 +104,11 @@ const Sidebar = ({
 const DashboardContent = () => {
   const { categories, products, orders } = useContext(AppContext);
 
+  // Calculate total revenue from all orders
+  const totalRevenue = orders.reduce((sum, order) => {
+    return sum + (order.order_summary?.grandTotal || 0);
+  }, 0);
+
   const stats = [
     {
       title: "Total Categories",
@@ -126,14 +134,14 @@ const DashboardContent = () => {
       iconBg: "bg-yellow-100",
       textColor: "text-yellow-600",
     },
-    // {
-    //   title: "Total Revenue",
-    //   value: "$318.89",
-    //   icon: "💰",
-    //   bgColor: "bg-red-50",
-    //   iconBg: "bg-red-100",
-    //   textColor: "text-red-600",
-    // },
+    {
+      title: "Total Revenue",
+      value: `₹${totalRevenue.toFixed(2)}`,
+      icon: "💰",
+      bgColor: "bg-red-50",
+      iconBg: "bg-red-100",
+      textColor: "text-red-600",
+    },
   ];
 
   return (
@@ -166,7 +174,7 @@ const DashboardContent = () => {
           </div>
         ))}
       </div>
-      {/* <RevenueAnalysis /> */}
+      <RevenueAnalysis />
     </div>
   );
 };
@@ -280,16 +288,36 @@ const AdminDashboard = () => {
                 >
                   <Menu size={24} />
                 </button>
-                <h1 className="text-lg font-semibold text-gray-900">
-                  Crackers Admin
-                </h1>
+                <img
+                  src={cpLogo}
+                  alt="Cremson Publications"
+                  className="h-8 w-auto"
+                />
                 <div className="w-6" /> {/* Spacer */}
               </div>
             </div>
           )}
 
           {/* Content Area */}
-          <main className="flex-1 overflow-auto">{renderContent()}</main>
+          <main className="flex-1 overflow-auto px-4 lg:px-0">
+            {renderContent()}
+
+            {/* Footer */}
+            <footer className="mt-8 pt-6 pb-4 border-t border-gray-200 text-center text-sm text-gray-500">
+              <p className="mb-2">
+                Design and developed by{" "}
+                <a
+                  href="https://www.oratechsolution.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-purple-600 hover:text-purple-700 hover:underline font-medium"
+                >
+                  Oratech Solution
+                </a>
+              </p>
+              <p>&copy; {new Date().getFullYear()} Cremson Publications. All rights reserved.</p>
+            </footer>
+          </main>
         </div>
       </div>
     </div>

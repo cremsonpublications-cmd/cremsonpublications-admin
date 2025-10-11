@@ -2,12 +2,9 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { adHeaderSectionDetailsContent } from "./constants/adHeaderContent";
 import { supabase } from "./supabaseClient";
 import Loader from "./containers/Admin/Loader";
-import AdHeader from "./components/AdHeader/AdHeader";
-import NavHeader from "./components/NavHeader/NavHeader";
 
 import LoginPage from "./containers/Admin/LoginPage";
 import AdminDashboard from "./containers/Admin/AdminDashboard";
-import Footer from "./components/Footer/Footer";
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "./context/AppContext";
 import { toast } from "sonner";
@@ -183,7 +180,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
-      {!hideLayout && <Footer />}
     </div>
   );
 }

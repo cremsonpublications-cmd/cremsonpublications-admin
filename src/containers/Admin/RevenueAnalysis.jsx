@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import {
   BarChart,
@@ -8,63 +8,56 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { AppContext } from "../../context/AppContext";
 
-// Sample data for different years
-const yearlyData = {
-  2023: [
-    { month: "Jan", revenue: 1000 },
-    { month: "Feb", revenue: 1200 },
-    { month: "Mar", revenue: 1100 },
-    { month: "Apr", revenue: 1300 },
-    { month: "May", revenue: 1400 },
-    { month: "Jun", revenue: 1600 },
-    { month: "Jul", revenue: 1800 },
-    { month: "Aug", revenue: 1700 },
-    { month: "Sep", revenue: 1900 },
-    { month: "Oct", revenue: 2000 },
-    { month: "Nov", revenue: 2100 },
-    { month: "Dec", revenue: 2200 },
-  ],
-  2024: [
-    { month: "Jan", revenue: 1200 },
-    { month: "Feb", revenue: 1400 },
-    { month: "Mar", revenue: 1300 },
-    { month: "Apr", revenue: 1500 },
-    { month: "May", revenue: 1700 },
-    { month: "Jun", revenue: 1900 },
-    { month: "Jul", revenue: 2100 },
-    { month: "Aug", revenue: 2000 },
-    { month: "Sep", revenue: 2200 },
-    { month: "Oct", revenue: 2300 },
-    { month: "Nov", revenue: 2400 },
-    { month: "Dec", revenue: 2500 },
-  ],
-  2025: [
-    { month: "Jan", revenue: 1250 },
-    { month: "Feb", revenue: 1500 },
-    { month: "Mar", revenue: 1600 },
-    { month: "Apr", revenue: 1850 },
-    { month: "May", revenue: 2100 },
-    { month: "Jun", revenue: 2400 },
-    { month: "Jul", revenue: 0 },
-    { month: "Aug", revenue: 0 },
-    { month: "Sep", revenue: 0 },
-    { month: "Oct", revenue: 0 },
-    { month: "Nov", revenue: 0 },
-    { month: "Dec", revenue: 0 },
-  ],
-};
-
-// Yearly revenue data for year cards
-const yearlyRevenue = {
-  2023: { total: 18300, growth: "+15%" },
-  2024: { total: 22000, growth: "+20%" },
-  2025: { total: 10700, growth: "+35%" }, // Current year (partial)
-};
 
 const RevenueAnalysis = ({ onBackToDashboard }) => {
+  const { orders } = useContext(AppContext);
   const [selectedYear, setSelectedYear] = useState(2025);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Calculate dynamic revenue data from orders
+  const calculateRevenueData = () => {
+    const monthlyRevenue = {};
+    const yearlyTotals = {};
+
+    // Initialize data for all years and months
+    [2023, 2024, 2025].forEach(year => {
+      monthlyRevenue[year] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ].map(month => ({ month, revenue: 0 }));
+      yearlyTotals[year] = 0;
+    });
+
+    // Process orders to calculate revenue
+    orders.forEach(order => {
+      if (order.created_at && order.order_summary?.grandTotal) {
+        const orderDate = new Date(order.created_at);
+        const year = orderDate.getFullYear();
+        const month = orderDate.getMonth(); // 0-11
+        const revenue = order.order_summary.grandTotal;
+
+        if (monthlyRevenue[year] && monthlyRevenue[year][month]) {
+          monthlyRevenue[year][month].revenue += revenue;
+          yearlyTotals[year] += revenue;
+        }
+      }
+    });
+
+    return { monthlyRevenue, yearlyTotals };
+  };
+
+  const { monthlyRevenue: yearlyData, yearlyTotals } = calculateRevenueData();
+
+  // Create yearly revenue summary
+  const yearlyRevenue = {};
+  Object.keys(yearlyTotals).forEach(year => {
+    yearlyRevenue[year] = {
+      total: yearlyTotals[year],
+      growth: "+0%" // You can calculate growth based on previous year if needed
+    };
+  });
 
   const years = [2023, 2024, 2025];
   const currentData = yearlyData[selectedYear];
@@ -73,6 +66,50 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
   // Show current year cards only when current year (2025) is selected
   const isCurrentYear = selectedYear === 2025;
 
+  // Calculate current period revenues
+  const calculateCurrentPeriods = () => {
+    const now = new Date();
+    const today = now.toDateString();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Calculate week start (Monday)
+    const weekStart = new Date(now);
+    const day = weekStart.getDay();
+    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+    weekStart.setDate(diff);
+
+    let todayRevenue = 0;
+    let weekRevenue = 0;
+    let monthRevenue = 0;
+
+    orders.forEach(order => {
+      if (order.created_at && order.order_summary?.grandTotal) {
+        const orderDate = new Date(order.created_at);
+        const revenue = order.order_summary.grandTotal;
+
+        // Today's revenue
+        if (orderDate.toDateString() === today) {
+          todayRevenue += revenue;
+        }
+
+        // This week's revenue
+        if (orderDate >= weekStart && orderDate <= now) {
+          weekRevenue += revenue;
+        }
+
+        // This month's revenue
+        if (orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear) {
+          monthRevenue += revenue;
+        }
+      }
+    });
+
+    return { todayRevenue, weekRevenue, monthRevenue };
+  };
+
+  const { todayRevenue, weekRevenue, monthRevenue } = calculateCurrentPeriods();
+
   // Custom bar colors - purple for data, light gray for empty months
   const getBarColor = (value) => {
     return value > 0 ? "#8B5CF6" : "#E5E7EB";
@@ -80,7 +117,7 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
 
   // Custom Y-axis formatter
   const formatYAxis = (value) => {
-    return `$${value.toLocaleString()}`;
+    return `₹${value.toLocaleString()}`;
   };
 
   const handleYearSelect = (year) => {
@@ -183,7 +220,7 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
               {selectedYear} Total Revenue
             </h3>
             <div className="text-3xl font-bold mb-1">
-              ${currentYearData.total.toLocaleString()}
+              ₹{currentYearData.total.toFixed(2)}
             </div>
           </div>
           <div className="text-right">
@@ -203,7 +240,7 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
                 Today's Revenue
               </h3>
               <div className="text-3xl font-bold text-orange-700 mb-1">
-                $245.89
+                ₹{todayRevenue.toFixed(2)}
               </div>
             </div>
           </div>
@@ -215,7 +252,7 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
                 This Week
               </h3>
               <div className="text-3xl font-bold text-green-700 mb-1">
-                $1,245.89
+                ₹{weekRevenue.toFixed(2)}
               </div>
             </div>
           </div>
@@ -227,31 +264,13 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
                 This Month
               </h3>
               <div className="text-3xl font-bold text-purple-700 mb-1">
-                $5,245.89
+                ₹{monthRevenue.toFixed(2)}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Additional Analytics Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Average Order Value */}
-
-        {/* Total Transactions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4">
-            Total Transactions ({selectedYear})
-          </h3>
-          <div className="text-2xl font-bold text-orange-600 mb-2">
-            {selectedYear === 2023
-              ? "1,247"
-              : selectedYear === 2024
-              ? "1,523"
-              : "847"}
-          </div>
-        </div>
-      </div>
 
       {/* Click outside to close dropdown */}
       {isDropdownOpen && (
