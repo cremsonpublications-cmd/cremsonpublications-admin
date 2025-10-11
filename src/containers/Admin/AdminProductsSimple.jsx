@@ -27,6 +27,10 @@ export default function AdminProductsSimple() {
   const [loading, setLoading] = useState(false);
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingSide, setUploadingSide] = useState(false);
+  const [globalSettings, setGlobalSettings] = useState({
+    delivery_info: "",
+    returns_info: ""
+  });
 
   // Cloudinary configuration
   const CLOUD_NAME = "dkxxa3xt0";
@@ -108,6 +112,7 @@ export default function AdminProductsSimple() {
 
   useEffect(() => {
     fetchAllData();
+    fetchGlobalSettings();
   }, []);
 
   // Handle click outside to close dropdowns
@@ -158,6 +163,40 @@ export default function AdminProductsSimple() {
       toast.error("Failed to fetch data");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchGlobalSettings() {
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("global_delivery_info, global_returns_info")
+        .eq("main_category_name", "SYSTEM_GLOBAL_SETTINGS")
+        .single();
+
+      if (error) {
+        console.error("No global settings found:", error);
+        return;
+      }
+
+      if (data) {
+        const newGlobalSettings = {
+          delivery_info: data.global_delivery_info || "",
+          returns_info: data.global_returns_info || ""
+        };
+        setGlobalSettings(newGlobalSettings);
+
+        // Update form data if we're creating a new product (not editing)
+        if (!editId && showForm) {
+          setFormData(prev => ({
+            ...prev,
+            delivery_information: newGlobalSettings.delivery_info,
+            returns_information: newGlobalSettings.returns_info,
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching global settings:", err);
     }
   }
 
@@ -354,32 +393,34 @@ export default function AdminProductsSimple() {
     }
   };
 
+  const getFormDefaults = () => ({
+    name: "",
+    category_id: "",
+    sub_categories: [],
+    classes: [],
+    main_image: "",
+    side_images: [],
+    author: "",
+    isbn: "",
+    edition: "",
+    mrp: "",
+    status: "In Stock",
+    weight: "",
+    dimension: "",
+    short_description: "",
+    description: "",
+    delivery_information: globalSettings.delivery_info,
+    returns_information: globalSettings.returns_info,
+    enable_bulk_pricing: false,
+    bulk_pricing: [],
+    has_own_discount: false,
+    own_discount_percentage: "",
+    use_category_discount: true,
+    tags: [],
+  });
+
   const resetForm = () => {
-    setFormData({
-      name: "",
-      category_id: "",
-      sub_categories: [],
-      classes: [],
-      main_image: "",
-      side_images: [],
-      author: "",
-      isbn: "",
-      edition: "",
-      mrp: "",
-      status: "In Stock",
-      weight: "",
-      dimension: "",
-      short_description: "",
-      description: "",
-      delivery_information: "",
-      returns_information: "",
-      enable_bulk_pricing: false,
-      bulk_pricing: [],
-      has_own_discount: false,
-      own_discount_percentage: "",
-      use_category_discount: true,
-      tags: [],
-    });
+    setFormData(getFormDefaults());
     setEditId(null);
     setShowForm(false);
   };
@@ -594,18 +635,28 @@ export default function AdminProductsSimple() {
 
       <div className="max-w-7xl mx-auto">
         {/* Add Product Button */}
-        <button
-          onClick={() => setShowForm(true)}
-          disabled={showForm}
-          className={`inline-flex items-center px-4 py-2 rounded-lg font-medium mb-6 transition-colors duration-200 ${
-            showForm
-              ? "bg-gray-400 cursor-not-allowed text-white"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
-          }`}
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add Product
-        </button>
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={() => {
+              setShowForm(true);
+              // Apply global settings when opening new product form
+              setTimeout(() => {
+                if (!editId) {
+                  setFormData(getFormDefaults());
+                }
+              }, 100);
+            }}
+            disabled={showForm}
+            className={`inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+              showForm
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Product
+          </button>
+        </div>
 
         {/* Product Form */}
         {showForm && (

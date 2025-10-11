@@ -15,6 +15,7 @@ import AdminProductsSimple from "./AdminProductsSimple";
 import AdminCoupons from "./AdminCoupons";
 import AdminOrders from "./AdminOrders";
 import LogoutButton from "./Logout";
+import GlobalSettings from "./GlobalSettings";
 import { AppContext } from "../../context/AppContext";
 import cpLogo from "../../assets/CP-Logo.png";
 
@@ -227,18 +228,52 @@ const OrdersContent = () => (
   </div>
 );
 
-const SettingsContent = () => (
-  <div className="lg:p-8 ">
-    <h2 className="text-2xl font-semibold text-gray-900 mb-8 mt-[20px] sm:mt-0">
-      Settings
-    </h2>
-    <div className="rounded-lg ">
-      <p className="text-gray-600">
-        <LogoutButton />
-      </p>
+const SettingsContent = () => {
+  const [activeSettingsTab, setActiveSettingsTab] = useState("global");
+
+  const settingsTabs = [
+    { id: "global", label: "Global Settings" },
+    { id: "account", label: "Account Settings" }
+  ];
+
+  return (
+    <div className="lg:p-8">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-8 mt-[20px] sm:mt-0">
+        Settings
+      </h2>
+
+      {/* Settings Navigation */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="flex">
+            {settingsTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSettingsTab(tab.id)}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeSettingsTab === tab.id
+                    ? "border-purple-500 text-purple-600 bg-purple-50"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Settings Content */}
+      {activeSettingsTab === "global" && <GlobalSettings />}
+      {activeSettingsTab === "account" && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h3>
+          <LogoutButton />
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // Main App Component
 const AdminDashboard = () => {
