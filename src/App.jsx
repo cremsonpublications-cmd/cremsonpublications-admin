@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { adHeaderSectionDetailsContent } from "./constants/adHeaderContent";
 import { supabase } from "./supabaseClient";
 import Loader from "./containers/Admin/Loader";
 
@@ -151,9 +150,6 @@ export default function App() {
 
   return (
     <div className="">
-      {!hideLayout && <AdHeader shippingData={adHeaderSectionDetailsContent} />}
-      {!hideLayout && <NavHeader />}
-
       <Routes>
         {/* <Route path="/track" element={<OrderTracking />} /> */}
 
@@ -179,7 +175,6 @@ export default function App() {
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-
     </div>
   );
 }
