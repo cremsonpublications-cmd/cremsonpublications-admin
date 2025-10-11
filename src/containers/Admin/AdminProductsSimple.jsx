@@ -178,7 +178,9 @@ export default function AdminProductsSimple() {
     try {
       const payload = {
         name: formData.name.trim(),
-        category_id: formData.category_id ? parseInt(formData.category_id) : null,
+        category_id: formData.category_id
+          ? parseInt(formData.category_id)
+          : null,
         sub_categories:
           formData.sub_categories.length > 0 ? formData.sub_categories : null,
         classes: formData.classes.length > 0 ? formData.classes : null,
@@ -299,8 +301,8 @@ export default function AdminProductsSimple() {
     try {
       // Generate unique ISBN by adding timestamp
       const timestamp = Date.now();
-      const uniqueISBN = product.isbn 
-        ? `${product.isbn.split('-CLONE')[0]}-CLONE-${timestamp}`
+      const uniqueISBN = product.isbn
+        ? `${product.isbn.split("-CLONE")[0]}-CLONE-${timestamp}`
         : null;
 
       // Create a copy of the product with modified name and unique ISBN
@@ -331,7 +333,7 @@ export default function AdminProductsSimple() {
       };
 
       const { error } = await supabase.from("products").insert([clonedProduct]);
-      
+
       if (error) throw error;
 
       await fetchAllData();
@@ -339,9 +341,13 @@ export default function AdminProductsSimple() {
     } catch (err) {
       console.error(err);
       if (err.code === "23505") {
-        toast.error("A product with this ISBN already exists! Please try again.");
+        toast.error(
+          "A product with this ISBN already exists! Please try again."
+        );
       } else {
-        toast.error("Failed to clone product: " + (err.message || "Unknown error"));
+        toast.error(
+          "Failed to clone product: " + (err.message || "Unknown error")
+        );
       }
     } finally {
       setLoading(false);
@@ -393,8 +399,8 @@ export default function AdminProductsSimple() {
 
   // Upload main image to Cloudinary
   const uploadMainImage = async (file) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
       return;
     }
 
@@ -408,9 +414,9 @@ export default function AdminProductsSimple() {
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
         { method: "POST", body: formData }
       );
-      
+
       if (!res.ok) throw new Error("Upload failed");
-      
+
       const data = await res.json();
       setFormData((prev) => ({ ...prev, main_image: data.secure_url }));
       toast.success("Main image uploaded successfully");
@@ -424,10 +430,10 @@ export default function AdminProductsSimple() {
 
   // Upload side images to Cloudinary
   const uploadSideImages = async (files) => {
-    const validFiles = files.filter(file => file.type.startsWith('image/'));
-    
+    const validFiles = files.filter((file) => file.type.startsWith("image/"));
+
     if (validFiles.length === 0) {
-      toast.error('Please upload image files');
+      toast.error("Please upload image files");
       return;
     }
 
@@ -436,7 +442,7 @@ export default function AdminProductsSimple() {
     const filesToUpload = validFiles.slice(0, remainingSlots);
 
     if (filesToUpload.length === 0) {
-      toast.error('Maximum 3 side images allowed');
+      toast.error("Maximum 3 side images allowed");
       return;
     }
 
@@ -453,9 +459,9 @@ export default function AdminProductsSimple() {
           `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
           { method: "POST", body: formData }
         );
-        
+
         if (!res.ok) throw new Error("Upload failed");
-        
+
         const data = await res.json();
         uploadedUrls.push(data.secure_url);
       }
@@ -464,7 +470,9 @@ export default function AdminProductsSimple() {
         ...prev,
         side_images: [...prev.side_images, ...uploadedUrls].slice(0, 3),
       }));
-      toast.success(`${uploadedUrls.length} side image(s) uploaded successfully`);
+      toast.success(
+        `${uploadedUrls.length} side image(s) uploaded successfully`
+      );
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload images");
@@ -487,7 +495,7 @@ export default function AdminProductsSimple() {
   const handleMainDrop = async (e) => {
     e.preventDefault();
     setIsDraggingMain(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
       await uploadMainImage(file);
@@ -508,7 +516,7 @@ export default function AdminProductsSimple() {
   const handleSideDrop = async (e) => {
     e.preventDefault();
     setIsDraggingSide(false);
-    
+
     const files = Array.from(e.dataTransfer.files).slice(0, 3);
     if (files.length > 0) {
       await uploadSideImages(files);
@@ -809,20 +817,28 @@ export default function AdminProductsSimple() {
                       onClick={() => mainImageRef.current?.click()}
                       className={`w-full px-4 py-8 border-2 border-dashed rounded-lg transition-all cursor-pointer ${
                         isDraggingMain
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-300 hover:border-gray-400 bg-white'
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-300 hover:border-gray-400 bg-white"
                       }`}
                     >
                       <div className="flex flex-col items-center justify-center">
-                        <Upload className={`w-8 h-8 mb-2 ${
-                          isDraggingMain ? 'text-blue-500' : 'text-gray-400'
-                        }`} />
-                        <span className={`text-sm font-medium ${
-                          isDraggingMain ? 'text-blue-600' : 'text-gray-600'
-                        }`}>
-                          {isDraggingMain ? 'Drop image here' : 'Drag & drop or click to upload'}
+                        <Upload
+                          className={`w-8 h-8 mb-2 ${
+                            isDraggingMain ? "text-blue-500" : "text-gray-400"
+                          }`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            isDraggingMain ? "text-blue-600" : "text-gray-600"
+                          }`}
+                        >
+                          {isDraggingMain
+                            ? "Drop image here"
+                            : "Drag & drop or click to upload"}
                         </span>
-                        <span className="text-xs text-gray-500 mt-1">Main product image</span>
+                        <span className="text-xs text-gray-500 mt-1">
+                          Main product image
+                        </span>
                       </div>
                     </div>
                     <input
@@ -866,20 +882,28 @@ export default function AdminProductsSimple() {
                       onClick={() => sideImagesRef.current?.click()}
                       className={`w-full px-4 py-8 border-2 border-dashed rounded-lg transition-all cursor-pointer ${
                         isDraggingSide
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-300 hover:border-gray-400 bg-white'
+                          ? "border-green-500 bg-green-50"
+                          : "border-gray-300 hover:border-gray-400 bg-white"
                       }`}
                     >
                       <div className="flex flex-col items-center justify-center">
-                        <Upload className={`w-8 h-8 mb-2 ${
-                          isDraggingSide ? 'text-green-500' : 'text-gray-400'
-                        }`} />
-                        <span className={`text-sm font-medium ${
-                          isDraggingSide ? 'text-green-600' : 'text-gray-600'
-                        }`}>
-                          {isDraggingSide ? 'Drop images here' : 'Drag & drop or click to upload'}
+                        <Upload
+                          className={`w-8 h-8 mb-2 ${
+                            isDraggingSide ? "text-green-500" : "text-gray-400"
+                          }`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            isDraggingSide ? "text-green-600" : "text-gray-600"
+                          }`}
+                        >
+                          {isDraggingSide
+                            ? "Drop images here"
+                            : "Drag & drop or click to upload"}
                         </span>
-                        <span className="text-xs text-gray-500 mt-1">Up to 3 additional images</span>
+                        <span className="text-xs text-gray-500 mt-1">
+                          Up to 3 additional images
+                        </span>
                       </div>
                     </div>
                     <input
@@ -1467,9 +1491,8 @@ export default function AdminProductsSimple() {
                     <td className="px-6 py-4">
                       <div className="space-y-1">
                         <div className="flex items-center space-x-1">
-                          <DollarSign className="w-4 h-4 text-green-600" />
                           <span className="text-sm font-medium text-gray-900">
-                            ₹{product.mrp}
+                            ₹ {product.mrp}
                           </span>
                         </div>
                         <span
