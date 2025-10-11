@@ -315,7 +315,10 @@ const AdminDashboard = () => {
                   Oratech Solution
                 </a>
               </p>
-              <p>&copy; {new Date().getFullYear()} Cremson Publications. All rights reserved.</p>
+              <p>
+                &copy; {new Date().getFullYear()} Cremson Publications. All
+                rights reserved.
+              </p>
             </footer>
           </main>
         </div>
