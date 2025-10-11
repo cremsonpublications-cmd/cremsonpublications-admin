@@ -15,6 +15,9 @@ export default function AdminPanel() {
         <Link to="orders" className="text-blue-600">
           Orders
         </Link>
+        <Link to="reviews" className="text-blue-600">
+          Reviews
+        </Link>
         <Link to="revenue" className="text-blue-600">
           Revenue
         </Link>

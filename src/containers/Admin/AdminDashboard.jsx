@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   Settings,
   Ticket,
+  MessageSquare,
   Menu,
   X,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import AdminCategoriesConsistent from "./AdminCategoriesConsistent";
 import AdminProductsSimple from "./AdminProductsSimple";
 import AdminCoupons from "./AdminCoupons";
 import AdminOrders from "./AdminOrders";
+import AdminReviews from "./AdminReviews";
 import LogoutButton from "./Logout";
 import GlobalSettings from "./GlobalSettings";
 import { AppContext } from "../../context/AppContext";
@@ -32,6 +34,7 @@ const Sidebar = ({
     { id: "products", label: "Products", icon: Package },
     { id: "coupons", label: "Coupons", icon: Ticket },
     { id: "orders", label: "Orders", icon: ShoppingCart },
+    { id: "reviews", label: "Reviews", icon: MessageSquare },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -228,6 +231,14 @@ const OrdersContent = () => (
   </div>
 );
 
+const ReviewsContent = () => (
+  <div className="lg:p-8 ">
+    <div className="rounded-lg ">
+      <AdminReviews />
+    </div>
+  </div>
+);
+
 const SettingsContent = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState("global");
 
@@ -292,6 +303,8 @@ const AdminDashboard = () => {
         return <CouponsContent />;
       case "orders":
         return <OrdersContent />;
+      case "reviews":
+        return <ReviewsContent />;
       case "settings":
         return <SettingsContent />;
       default:
