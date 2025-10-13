@@ -108,10 +108,10 @@ const Sidebar = ({
 const DashboardContent = () => {
   const { categories, products, orders } = useContext(AppContext);
 
-  // Calculate total revenue from all orders
-  const totalRevenue = orders.reduce((sum, order) => {
-    return sum + (order.order_summary?.grandTotal || 0);
-  }, 0);
+  // orders is now an object with { count, totalRevenue, revenueOrdersCount } from App.jsx
+  const ordersCount = orders?.count || 0;
+  const totalRevenue = orders?.totalRevenue || 0;
+  const revenueOrdersCount = orders?.revenueOrdersCount || 0;
 
   const stats = [
     {
@@ -132,7 +132,7 @@ const DashboardContent = () => {
     },
     {
       title: "Total Orders",
-      value: orders.length,
+      value: ordersCount,
       icon: "🛒",
       bgColor: "bg-yellow-50",
       iconBg: "bg-yellow-100",
@@ -141,6 +141,7 @@ const DashboardContent = () => {
     {
       title: "Total Revenue",
       value: `₹${totalRevenue.toFixed(2)}`,
+      subtitle: `${revenueOrdersCount} orders`,
       icon: "💰",
       bgColor: "bg-red-50",
       iconBg: "bg-red-100",
@@ -170,6 +171,9 @@ const DashboardContent = () => {
                   {stat.title}
                 </p>
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                {stat.subtitle && (
+                  <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
+                )}
               </div>
               <div className={`${stat.iconBg} p-3 rounded-lg`}>
                 <span className="text-xl">{stat.icon}</span>
@@ -244,7 +248,7 @@ const SettingsContent = () => {
 
   const settingsTabs = [
     { id: "global", label: "Global Settings" },
-    { id: "account", label: "Account Settings" }
+    { id: "account", label: "Account Settings" },
   ];
 
   return (
@@ -278,7 +282,9 @@ const SettingsContent = () => {
       {activeSettingsTab === "global" && <GlobalSettings />}
       {activeSettingsTab === "account" && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Account Settings
+          </h3>
           <LogoutButton />
         </div>
       )}

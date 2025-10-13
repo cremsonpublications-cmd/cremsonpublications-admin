@@ -27,7 +27,7 @@ export default function AdminRevenue() {
   async function fetchOrders() {
     const { data } = await supabase
       .from("orders")
-      .select("order_summary, delivery, order_date");
+      .select("order_summary, delivery, payment, order_date");
     setOrders(data || []);
     calculateRevenue(data || []);
   }
@@ -38,9 +38,15 @@ export default function AdminRevenue() {
       failed = 0;
     data.forEach((o) => {
       const amt = o.order_summary?.grandTotal || 0;
-      if (o.delivery?.status === "Completed") completed += amt;
-      else if (o.delivery?.status === "Failed") failed += amt;
-      else pending += amt;
+      const paymentStatus = o.payment?.status;
+
+      // Only count revenue for orders with "Paid" payment status
+      if (paymentStatus === "Paid") {
+        if (o.delivery?.status === "Completed") completed += amt;
+        else if (o.delivery?.status === "Failed") failed += amt;
+        else pending += amt;
+      }
+      // Orders with non-Paid status don't contribute to revenue
     });
     setRevenue({ pending, completed, failed });
   }
@@ -49,19 +55,24 @@ export default function AdminRevenue() {
   function getChartData() {
     const groups = {};
     orders.forEach((o) => {
-      const date = new Date(o.order_date);
-      let key = "";
-      if (filter === "day") key = date.toISOString().split("T")[0];
-      else if (filter === "month")
-        key = `${date.getFullYear()}-${date.getMonth() + 1}`;
-      else if (filter === "year") key = `${date.getFullYear()}`;
+      const paymentStatus = o.payment?.status;
 
-      if (!groups[key])
-        groups[key] = { period: key, pending: 0, completed: 0, failed: 0 };
-      const amt = o.order_summary?.grandTotal || 0;
-      if (o.delivery?.status === "Completed") groups[key].completed += amt;
-      else if (o.delivery?.status === "Failed") groups[key].failed += amt;
-      else groups[key].pending += amt;
+      // Only include orders with "Paid" payment status in charts
+      if (paymentStatus === "Paid") {
+        const date = new Date(o.order_date);
+        let key = "";
+        if (filter === "day") key = date.toISOString().split("T")[0];
+        else if (filter === "month")
+          key = `${date.getFullYear()}-${date.getMonth() + 1}`;
+        else if (filter === "year") key = `${date.getFullYear()}`;
+
+        if (!groups[key])
+          groups[key] = { period: key, pending: 0, completed: 0, failed: 0 };
+        const amt = o.order_summary?.grandTotal || 0;
+        if (o.delivery?.status === "Completed") groups[key].completed += amt;
+        else if (o.delivery?.status === "Failed") groups[key].failed += amt;
+        else groups[key].pending += amt;
+      }
     });
 
     return Object.values(groups).sort((a, b) =>

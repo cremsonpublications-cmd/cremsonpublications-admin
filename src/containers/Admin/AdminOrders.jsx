@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Toaster, toast } from "sonner";
 
 // Helper function to detect auto-generated tracking IDs
@@ -31,13 +31,14 @@ import {
 } from "lucide-react";
 import Loader from "./Loader";
 import { supabase } from "../../supabaseClient";
-import { AppContext } from "../../context/AppContext";
 import { sendOrderUpdateEmail } from "../../services/emailService";
 import { generateShippingLabel } from "../../services/pdfService";
 
 const AdminOrders = () => {
-  const { orders, setOrders, ordersFetched, setOrdersFetched } =
-    useContext(AppContext);
+  // Local state for orders (independent from AppContext)
+  const [allOrders, setAllOrders] = useState([]); // Store all fetched orders
+  const [filteredOrders, setFilteredOrders] = useState([]); // Store filtered orders
+  const [ordersFetched, setOrdersFetched] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,36 +46,148 @@ const AdminOrders = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [editForm, setEditForm] = useState({});
 
+  // Date range filter state
+  const [dateRange, setDateRange] = useState({
+    startDate: "",
+    endDate: ""
+  });
+
+  // Pagination state - now client-side
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 100;
+
   // Delete modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deletingOrderId, setDeletingOrderId] = useState("");
 
-  // Fetch orders from Supabase
-  const fetchOrders = useCallback(async () => {
+  // Fetch all orders from Supabase once (handle large datasets)
+  const fetchAllOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("orders").select("*");
-      if (error) {
-        console.error("Error fetching orders:", error);
-        toast.error("Failed to fetch orders");
-      } else {
-        setOrders(data || []);
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000; // Fetch in batches of 1000
+      let hasMore = true;
+      let batchCount = 0;
+
+      console.log("Starting to fetch orders...");
+
+      while (hasMore) {
+        batchCount++;
+        console.log(`Fetching batch ${batchCount} (orders ${from + 1}-${from + batchSize})...`);
+
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + batchSize - 1);
+
+        if (error) {
+          console.error("Error fetching orders:", error);
+          toast.error("Failed to fetch orders");
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += batchSize;
+          hasMore = data.length === batchSize; // If we got fewer than batchSize, we're done
+          console.log(`Batch ${batchCount} complete: ${data.length} orders fetched`);
+        } else {
+          hasMore = false;
+        }
       }
+
+      console.log(`✅ Fetch complete! Total orders: ${allData.length} (${batchCount} batches)`);
+      setAllOrders(allData);
+      setFilteredOrders(allData); // Initially show all orders
     } catch (error) {
       console.error("Error:", error);
       toast.error("Failed to fetch orders");
     } finally {
       setLoading(false);
     }
-  }, [setOrders]);
+  }, []);
+
+  // Client-side filtering function with date range
+  const filterOrders = useCallback((orders, search, dateFilter) => {
+    let filtered = orders;
+
+    // Text search filter
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(order =>
+        order.order_id?.toLowerCase().includes(searchLower) ||
+        order.user_info?.name?.toLowerCase().includes(searchLower) ||
+        order.user_info?.email?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Date range filter
+    if (dateFilter.startDate || dateFilter.endDate) {
+      filtered = filtered.filter(order => {
+        if (!order.created_at) return false;
+
+        const orderDate = new Date(order.created_at);
+        const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
+        const endDate = dateFilter.endDate ? new Date(dateFilter.endDate + 'T23:59:59') : null;
+
+        if (startDate && orderDate < startDate) return false;
+        if (endDate && orderDate > endDate) return false;
+
+        return true;
+      });
+    }
+
+    return filtered;
+  }, []);
 
   useEffect(() => {
     if (!ordersFetched) {
-      fetchOrders();
+      fetchAllOrders();
       setOrdersFetched(true); // mark as fetched to avoid repeated calls
     }
-  }, [ordersFetched, setOrdersFetched, fetchOrders]);
+  }, [ordersFetched, fetchAllOrders]);
+
+  // Handle search and date range filtering with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (ordersFetched) {
+        const filtered = filterOrders(allOrders, searchTerm, dateRange);
+        setFilteredOrders(filtered);
+        setCurrentPage(1); // Reset to page 1 when filtering
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, dateRange, allOrders, filterOrders, ordersFetched]);
+
+  // Computed values for pagination
+  const totalOrders = filteredOrders.length;
+  const totalPages = Math.ceil(totalOrders / ordersPerPage);
+  const startIndex = (currentPage - 1) * ordersPerPage;
+  const endIndex = startIndex + ordersPerPage;
+  const currentOrders = filteredOrders.slice(startIndex, endIndex);
+
+  // Client-side pagination functions (no API calls)
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -228,7 +341,7 @@ const AdminOrders = () => {
         
         setEditingOrder(null);
         setEditForm({});
-        fetchOrders(); // Refresh the orders list
+        fetchAllOrders(); // Refresh the orders list
       }
     } catch (error) {
       console.error("Error:", error);
@@ -281,14 +394,14 @@ const AdminOrders = () => {
       } else {
         toast.success("Order deleted successfully!");
       }
-      
+
       // Always refresh the orders list after delete attempt
-      fetchOrders();
+      fetchAllOrders();
     } catch (error) {
       console.error("Error:", error);
       toast.error("Failed to delete order");
       // Still refresh even on error to ensure UI is in sync
-      fetchOrders();
+      fetchAllOrders();
     }
 
     setDeleteModalOpen(false);
@@ -296,12 +409,13 @@ const AdminOrders = () => {
     setDeletingOrderId("");
   };
 
-  const filteredOrders = orders.filter(
-    (order) =>
-      order.order_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.user_info?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.user_info?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("");
+    setDateRange({ startDate: "", endDate: "" });
+  };
+
+  // Client-side pagination now implemented - no API calls for pagination
 
   // Order Details View
   if (showDetails && selectedOrder) {
@@ -575,11 +689,11 @@ const AdminOrders = () => {
   }
 
   return (
-    <div className="  ">
-      <div className="max-w-7xl mx-auto">
+    <div className="h-[calc(100vh-120px)] flex flex-col">
+      <div className="max-w-7xl mx-auto h-full flex flex-col">
         {/* Edit Form */}
         {editingOrder && (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-lg p-4 md:p-6 mb-8">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-lg p-4 md:p-6 mb-8 flex-shrink-0">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900">
                 Edit Order #{editingOrder.order_id}
@@ -1038,30 +1152,74 @@ const AdminOrders = () => {
           </div>
         )}
 
-        {/* Orders List */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200">
-          <div className="p-4 md:p-6 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
-                <input
-                  type="text"
-                  placeholder="Search orders..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 md:pl-10 pr-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none w-full sm:w-80"
-                />
+        {/* Orders List with Fixed Header and Pagination */}
+        <div className="bg-white rounded-lg shadow-lg border border-gray-200 flex flex-col flex-1 min-h-[600px]">
+          {/* FIXED Header */}
+          <div className="p-4 md:p-6 border-b border-gray-200 flex-shrink-0 bg-white">
+            <div className="space-y-4">
+              {/* Search and Total Row */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search orders..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 md:pl-10 pr-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none w-full sm:w-80"
+                  />
+                </div>
+                <div className="text-sm text-gray-600">
+                  Total: {totalOrders} orders {(searchTerm || dateRange.startDate || dateRange.endDate) && `(filtered)`}
+                </div>
+              </div>
+
+              {/* Date Range Filters Row */}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="startDate" className="text-sm font-medium text-gray-700">
+                    From:
+                  </label>
+                  <input
+                    id="startDate"
+                    type="date"
+                    value={dateRange.startDate}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="endDate" className="text-sm font-medium text-gray-700">
+                    To:
+                  </label>
+                  <input
+                    id="endDate"
+                    type="date"
+                    value={dateRange.endDate}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  />
+                </div>
+                {(searchTerm || dateRange.startDate || dateRange.endDate) && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-3 py-2 text-sm text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Loading State */}
-          {loading && <Loader />}
-
-          {/* Mobile Cards View */}
-          <div className="block md:hidden">
-            {!loading &&
-              filteredOrders.map((order) => (
+          {/* SCROLLABLE Content Area - This is the only part that scrolls */}
+          <div className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100vh-300px)]">
+            {/* Loading State */}
+            {loading && <Loader />}
+            {/* Mobile Cards View */}
+            <div className="block md:hidden">
+              {!loading &&
+                currentOrders.map((order) => (
                 <div key={order.id} className="border-b border-gray-200 p-4">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -1140,40 +1298,40 @@ const AdminOrders = () => {
                   </div>
                 </div>
               ))}
-          </div>
+            </div>
 
-          {/* Desktop Table View */}
-          {!loading && (
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
-                      ORDER ID
-                    </th>
-                    <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
-                      CUSTOMER
-                    </th>
-                    <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
-                      DATE
-                    </th>
-                    <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
-                      DELIVERY STATUS
-                    </th>
-                    <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
-                      PAYMENT STATUS
-                    </th>
-                    <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
-                      TOTAL
-                    </th>
-                    <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
-                      ACTIONS
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
+            {/* Desktop Table View */}
+            {!loading && (
+              <div className="hidden md:block">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
+                        ORDER ID
+                      </th>
+                      <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
+                        CUSTOMER
+                      </th>
+                      <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
+                        DATE
+                      </th>
+                      <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
+                        DELIVERY STATUS
+                      </th>
+                      <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
+                        PAYMENT STATUS
+                      </th>
+                      <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
+                        TOTAL
+                      </th>
+                      <th className="text-left py-3 px-6 font-medium text-gray-600 uppercase tracking-wider text-xs">
+                        ACTIONS
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {currentOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50">
                       <td className="py-4 px-6">
                         <div className="font-medium text-gray-900 text-sm">
                           #{order.order_id}
@@ -1252,26 +1410,85 @@ const AdminOrders = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && filteredOrders.length === 0 && (
-            <div className="text-center py-8 md:py-12">
-              <div className="text-gray-400 mb-4">
-                <Package className="w-8 h-8 md:w-12 md:h-12 mx-auto" />
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">
-                No orders found
-              </h3>
-              <p className="text-gray-600 text-sm md:text-base">
-                {searchTerm
-                  ? "Try adjusting your search criteria"
-                  : "No orders available in the system"}
-              </p>
+            )}
+
+            {/* Empty State */}
+            {!loading && currentOrders.length === 0 && (
+              <div className="text-center py-8 md:py-12">
+                <div className="text-gray-400 mb-4">
+                  <Package className="w-8 h-8 md:w-12 md:h-12 mx-auto" />
+                </div>
+                <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">
+                  No orders found
+                </h3>
+                <p className="text-gray-600 text-sm md:text-base">
+                  {searchTerm
+                    ? "Try adjusting your search criteria"
+                    : "No orders available in the system"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* FIXED Pagination Controls - Always visible at bottom */}
+          {!loading && totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 flex-shrink-0">
+              <div className="flex items-center text-sm text-gray-600">
+                <span>
+                  Showing {((currentPage - 1) * ordersPerPage) + 1} to {Math.min(currentPage * ordersPerPage, totalOrders)} of {totalOrders} orders
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded border hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-1 text-sm rounded border ${
+                          currentPage === pageNum
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded border hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

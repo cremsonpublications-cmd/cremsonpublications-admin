@@ -1,0 +1,20 @@
+YEARLY ORDERS REPORT
+==================================================
+Report generated on: 2025-10-13 15:53:20
+
+YEAR 2025
+--------------------
+Total Orders: 100
+Total Amount: ₹133,361.00
+
+Monthly Breakdown for 2025:
+  2025 September: 67 orders, ₹33,424.00
+  2025 October: 33 orders, ₹99,937.00
+  Average per active month: 50.0 orders, ₹66,680.50
+
+
+OVERALL SUMMARY (2023-2025)
+==============================
+Total Orders: 100
+Total Amount: ₹133,361.00
+Average Order Value: ₹1,333.61

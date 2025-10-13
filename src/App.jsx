@@ -113,19 +113,56 @@ export default function App() {
     else setProducts(data);
   }
 
-  const fetchOrders = async () => {
+  // Fetch dashboard stats (count and revenue) without loading all orders
+  const fetchDashboardStats = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("orders").select("*");
+      // Get total count of orders
+      const { count, error: countError } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true });
+
+      if (countError) throw countError;
+
+      // Get orders with payment and delivery info for revenue calculation (minimal data)
+      const { data, error } = await supabase
+        .from("orders")
+        .select("order_summary, payment, delivery");
+
       if (error) {
-        console.error("Error fetching orders:", error);
-        toast.error("Failed to fetch orders");
+        console.error("Error fetching dashboard stats:", error);
+        toast.error("Failed to fetch dashboard statistics");
       } else {
-        setOrders(data || []);
+        // Calculate total revenue from orders with delivery status "Shipped" or "Delivered"
+        const totalRevenue = (data || []).reduce((sum, order) => {
+          const isShippedOrDelivered =
+            order.delivery?.status === "Shipped" ||
+            order.delivery?.status === "Delivered";
+
+          if (isShippedOrDelivered) {
+            return sum + (order.order_summary?.grandTotal || 0);
+          }
+          return sum;
+        }, 0);
+
+        // Count orders that contribute to revenue (Shipped/Delivered)
+        const revenueOrdersCount = (data || []).filter(order => {
+          const isShippedOrDelivered =
+            order.delivery?.status === "Shipped" ||
+            order.delivery?.status === "Delivered";
+          return isShippedOrDelivered;
+        }).length;
+
+        // Set minimal dashboard data (not full orders array)
+        setOrders({
+          count: count || 0,
+          totalRevenue: totalRevenue || 0,
+          revenueOrdersCount: revenueOrdersCount || 0
+        });
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Failed to fetch orders");
+      toast.error("Failed to fetch dashboard statistics");
     } finally {
       setLoading(false);
     }
@@ -143,7 +180,7 @@ export default function App() {
     }
 
     if (!ordersFetched) {
-      fetchOrders();
+      fetchDashboardStats();
       setOrdersFetched(true);
     }
   }, []);

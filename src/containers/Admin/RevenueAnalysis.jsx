@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import {
   BarChart,
@@ -7,14 +7,40 @@ import {
   YAxis,
   ResponsiveContainer,
   Cell,
+  Tooltip,
 } from "recharts";
-import { AppContext } from "../../context/AppContext";
+import { supabase } from "../../supabaseClient";
 
 
 const RevenueAnalysis = ({ onBackToDashboard }) => {
-  const { orders } = useContext(AppContext);
+  const [revenueOrders, setRevenueOrders] = useState([]);
   const [selectedYear, setSelectedYear] = useState(2025);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch orders for revenue analysis
+  useEffect(() => {
+    const fetchRevenueOrders = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("created_at, order_summary, payment, delivery");
+
+        if (error) {
+          console.error("Error fetching orders for revenue analysis:", error);
+        } else {
+          setRevenueOrders(data || []);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRevenueOrders();
+  }, []);
 
   // Calculate dynamic revenue data from orders
   const calculateRevenueData = () => {
@@ -30,13 +56,19 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
       yearlyTotals[year] = 0;
     });
 
-    // Process orders to calculate revenue
-    orders.forEach(order => {
-      if (order.created_at && order.order_summary?.grandTotal) {
+    // Process orders to calculate revenue - only count orders with delivery status "Shipped" or "Delivered"
+    revenueOrders.forEach(order => {
+      const isShippedOrDelivered =
+        order.delivery?.status === "Shipped" ||
+        order.delivery?.status === "Delivered";
+
+      if (order.created_at && order.order_summary?.grandTotal && isShippedOrDelivered) {
         const orderDate = new Date(order.created_at);
         const year = orderDate.getFullYear();
         const month = orderDate.getMonth(); // 0-11
         const revenue = order.order_summary.grandTotal;
+
+        // Revenue calculation
 
         if (monthlyRevenue[year] && monthlyRevenue[year][month]) {
           monthlyRevenue[year][month].revenue += revenue;
@@ -49,6 +81,8 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
   };
 
   const { monthlyRevenue: yearlyData, yearlyTotals } = calculateRevenueData();
+
+  // Revenue data calculated
 
   // Create yearly revenue summary
   const yearlyRevenue = {};
@@ -83,8 +117,13 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
     let weekRevenue = 0;
     let monthRevenue = 0;
 
-    orders.forEach(order => {
-      if (order.created_at && order.order_summary?.grandTotal) {
+    revenueOrders.forEach(order => {
+      // Only count revenue from orders with delivery status "Shipped" or "Delivered"
+      const isShippedOrDelivered =
+        order.delivery?.status === "Shipped" ||
+        order.delivery?.status === "Delivered";
+
+      if (order.created_at && order.order_summary?.grandTotal && isShippedOrDelivered) {
         const orderDate = new Date(order.created_at);
         const revenue = order.order_summary.grandTotal;
 
@@ -112,13 +151,33 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
 
   // Custom bar colors - purple for data, light gray for empty months
   const getBarColor = (value) => {
-    return value > 0 ? "#8B5CF6" : "#E5E7EB";
+    return value > 0 ? "#8B5CF6" : "#F3F4F6";
   };
 
   // Custom Y-axis formatter
   const formatYAxis = (value) => {
     return `₹${value.toLocaleString()}`;
   };
+
+  // Custom tooltip formatter
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{`${label} ${selectedYear}`}</p>
+          <p className="text-purple-600">
+            <span className="font-medium">Revenue: </span>
+            <span className="font-bold">₹{payload[0].value.toLocaleString()}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Calculate dynamic Y-axis domain
+  const maxRevenue = currentData.length > 0 ? Math.max(...currentData.map(item => item.revenue)) : 0;
+  const yAxisMax = maxRevenue > 0 ? Math.ceil(maxRevenue / 1000) * 1000 : 1000; // Round up to nearest 1000
 
   const handleYearSelect = (year) => {
     setSelectedYear(year);
@@ -130,7 +189,7 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mt-4 lg:mt-0">
-          Revenue Analysis
+          Revenue Analysis (Shipped/Delivered Orders)
         </h1>
       </div>
 
@@ -178,37 +237,48 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
           </div>
         </div>
 
-        <div className="h-64 sm:h-72 md:h-80 lg:h-96">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={currentData}
-              margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
-              barCategoryGap="20%"
-            >
-              <XAxis
-                dataKey="month"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#6B7280", fontSize: 12 }}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#6B7280", fontSize: 12 }}
-                tickFormatter={formatYAxis}
-                domain={[0, 2500]}
-                ticks={[0, 500, 1000, 1500, 2000, 2500]}
-              />
-              <Bar dataKey="revenue" radius={[4, 4, 0, 0]} barSize={30}>
-                {currentData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={getBarColor(entry.revenue)}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="h-64 sm:h-72 md:h-80 lg:h-96 relative">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500">Loading revenue data...</div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={currentData}
+                margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
+                barCategoryGap="20%"
+              >
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#6B7280", fontSize: 12 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#6B7280", fontSize: 12 }}
+                  tickFormatter={formatYAxis}
+                  domain={[0, yAxisMax]}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey="revenue"
+                  radius={[4, 4, 0, 0]}
+                  barSize={30}
+                  minPointSize={2}
+                >
+                  {currentData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={getBarColor(entry.revenue)}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
