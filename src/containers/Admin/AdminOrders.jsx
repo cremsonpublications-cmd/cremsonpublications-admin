@@ -327,21 +327,18 @@ const AdminOrders = () => {
             }
           };
 
-          const response = await fetch('https://vayisutwehvbjpkhzhcc.supabase.co/functions/v1/send-order-update-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(emailData)
+          const { data, error: functionError } = await supabase.functions.invoke('send-order-update-email', {
+            body: emailData
           });
 
-          if (response.ok) {
-            const result = await response.json();
+          if (functionError) {
+            console.error("Email sending failed:", functionError);
+            toast.warning("Order updated but email notification failed to send.");
+          } else if (data?.success) {
             toast.success("Order update email sent successfully!");
-            console.log('Order update email sent:', result);
+            console.log('Order update email sent:', data);
           } else {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            console.error("Email sending failed:", errorData);
+            console.error("Email sending failed:", data);
             toast.warning("Order updated but email notification failed to send.");
           }
         } catch (emailError) {

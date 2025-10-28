@@ -1,19 +1,46 @@
-// Order Update Email Service for Admin Panel
-export const sendOrderUpdateEmail = async (orderData) => {
-  try {
-    // Brevo API key from environment variables
-    const VITE_BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
-    const SENDER_EMAIL = "cremsonpublications@gmail.com";
-    const SENDER_NAME = "Cremson Publications";
-    const ADMIN_EMAIL = "Info@cremsonpublications.com";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-    // Check if API key is configured
-    if (!VITE_BREVO_API_KEY) {
-      console.warn(
-        "VITE_BREVO_API_KEY is not configured in environment variables"
-      );
-      return { success: false, message: "Email service not configured" };
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { orderData } = await req.json()
+
+    // Validate required data
+    if (!orderData || !orderData.customerEmail || !orderData.customerName || !orderData.orderId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required order data' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
+
+    // Get Brevo API key from environment
+    const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY')
+    if (!BREVO_API_KEY) {
+      console.error('BREVO_API_KEY not configured')
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    const SENDER_EMAIL = "cremsonpublications@gmail.com"
+    const SENDER_NAME = "Cremson Publications"
+    const ADMIN_EMAIL = "Info@cremsonpublications.com"
 
     // Create HTML email template for order update
     const htmlContent = `
@@ -45,7 +72,7 @@ export const sendOrderUpdateEmail = async (orderData) => {
             <h1>Order Update</h1>
             <p>Your order has been updated, ${orderData.customerName}!</p>
           </div>
-          
+
           <div class="content">
             <div class="status-update">
               <h3 style="color: #155724; margin: 0;">Order Status Update</h3>
@@ -85,15 +112,15 @@ export const sendOrderUpdateEmail = async (orderData) => {
             `
                 : ""
             }
-            
+
             <h2>Order Details</h2>
             <div class="order-details">
               <p><strong>Order ID:</strong> ${orderData.orderId}</p>
               <p><strong>Order Date:</strong> ${orderData.orderDate}</p>
-              
+
               <h3>Items Ordered:</h3>
               ${orderData.items
-                .map(
+                ?.map(
                   (item) => `
                 <div class="item">
                   <span>${item.name} (Qty: ${item.quantity})</span>
@@ -101,24 +128,22 @@ export const sendOrderUpdateEmail = async (orderData) => {
                 </div>
               `
                 )
-                .join("")}
-              
+                .join("") || ''}
+
               <div class="item total">
                 <span>Total Amount:</span>
                 <span>₹${orderData.totalAmount}</span>
               </div>
             </div>
-            
+
             <h3>Shipping Address:</h3>
             <div class="address">
-              <strong>${orderData.shippingAddress.name}</strong><br>
-              ${orderData.shippingAddress.street}<br>
-              ${orderData.shippingAddress.city}, ${
-      orderData.shippingAddress.state
-    } - ${orderData.shippingAddress.pincode}<br>
-              Phone: ${orderData.shippingAddress.phone}
+              <strong>${orderData.shippingAddress?.name}</strong><br>
+              ${orderData.shippingAddress?.street}<br>
+              ${orderData.shippingAddress?.city}, ${orderData.shippingAddress?.state} - ${orderData.shippingAddress?.pincode}<br>
+              Phone: ${orderData.shippingAddress?.phone}
             </div>
-            
+
             <div class="footer">
               <p><strong>Contact Us:</strong></p>
               <p>📞 011-4578594 | 📱 +91 79826 45175</p>
@@ -132,13 +157,14 @@ export const sendOrderUpdateEmail = async (orderData) => {
         </div>
       </body>
       </html>
-    `;
+    `
 
+    // Send email via Brevo API
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
         accept: "application/json",
-        "api-key": VITE_BREVO_API_KEY,
+        "api-key": BREVO_API_KEY,
         "content-type": "application/json",
       },
       body: JSON.stringify({
@@ -153,22 +179,40 @@ export const sendOrderUpdateEmail = async (orderData) => {
         subject: `Order Update #${orderData.orderId} - ${orderData.deliveryStatus} - Cremson Publications`,
         htmlContent: htmlContent,
       }),
-    });
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (response.ok) {
-      console.log("Order update email sent successfully:", data);
-      return { success: true, data };
+      console.log("Order update email sent successfully:", data)
+      return new Response(
+        JSON.stringify({ success: true, data }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     } else {
-      console.error("Error sending order update email:", data);
-      return {
-        success: false,
-        error: data.error || "Failed to send order update email",
-      };
+      console.error("Error sending order update email:", data)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: data.error || "Failed to send order update email",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
   } catch (error) {
-    console.error("Order update email service error:", error);
-    return { success: false, error: error.message };
+    console.error("Order update email service error:", error)
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
-};
+})

@@ -1,0 +1,39 @@
+[project]
+ref = "vayisutwehvbjpkhzhcc"
+org_id = "your-org-id"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+max_connections = 100
+pool_size = 10
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+port = 54325
+
+[auth]
+enabled = true
+port = 54326
+
+[edge_functions]
+enabled = true
+port = 54327
+
+[functions.send-order-update-email]
+import_map = "./import_map.json"
