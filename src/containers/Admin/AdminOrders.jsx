@@ -31,7 +31,6 @@ import {
 } from "lucide-react";
 import Loader from "./Loader";
 import { supabase } from "../../supabaseClient";
-import { sendOrderUpdateEmail } from "../../services/emailService";
 import { generateShippingLabel } from "../../services/pdfService";
 
 const AdminOrders = () => {
@@ -302,36 +301,47 @@ const AdminOrders = () => {
       } else {
         toast.success("Order updated successfully!");
         
-        // Send order update email to customer and admin
+        // Send order update email to customer and admin using Edge Function
         try {
           const emailData = {
-            customerEmail: editingOrder.user_info?.email,
-            customerName: editingOrder.user_info?.name,
-            orderId: editingOrder.order_id,
-            orderDate: editingOrder.order_date,
-            deliveryStatus: editForm.delivery.status,
-            trackingId: editForm.delivery.trackingId,
-            courier: editForm.delivery.courier,
-            trackingUrl: editForm.delivery.trackingUrl,
-            expectedDate: editForm.delivery.expectedDate,
-            items: editingOrder.items || [],
-            totalAmount: editingOrder.order_summary?.grandTotal,
-            shippingAddress: {
-              name: editingOrder.user_info?.name,
-              street: editForm.user_info.address.street,
-              city: editForm.user_info.address.city,
-              state: editForm.user_info.address.state,
-              pincode: editForm.user_info.address.pincode,
-              phone: editingOrder.user_info?.phone
+            orderData: {
+              customerEmail: editingOrder.user_info?.email,
+              customerName: editingOrder.user_info?.name,
+              orderId: editingOrder.order_id,
+              orderDate: editingOrder.order_date,
+              deliveryStatus: editForm.delivery.status,
+              trackingId: editForm.delivery.trackingId,
+              courier: editForm.delivery.courier,
+              trackingUrl: editForm.delivery.trackingUrl,
+              expectedDate: editForm.delivery.expectedDate,
+              items: editingOrder.items || [],
+              totalAmount: editingOrder.order_summary?.grandTotal,
+              shippingAddress: {
+                name: editingOrder.user_info?.name,
+                street: editForm.user_info.address.street,
+                city: editForm.user_info.address.city,
+                state: editForm.user_info.address.state,
+                pincode: editForm.user_info.address.pincode,
+                phone: editingOrder.user_info?.phone
+              }
             }
           };
 
-          const emailResult = await sendOrderUpdateEmail(emailData);
-          
-          if (emailResult.success) {
+          const response = await fetch('https://vayisutwehvbjpkhzhcc.supabase.co/functions/v1/send-order-update-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailData)
+          });
+
+          if (response.ok) {
+            const result = await response.json();
             toast.success("Order update email sent successfully!");
+            console.log('Order update email sent:', result);
           } else {
-            console.error("Email sending failed:", emailResult.error);
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error("Email sending failed:", errorData);
             toast.warning("Order updated but email notification failed to send.");
           }
         } catch (emailError) {

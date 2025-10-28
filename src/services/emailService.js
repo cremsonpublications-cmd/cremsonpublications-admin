@@ -2,17 +2,19 @@
 export const sendOrderUpdateEmail = async (orderData) => {
   try {
     // Brevo API key from environment variables
-    const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
+    const VITE_BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
     const SENDER_EMAIL = "cremsonpublications@gmail.com";
-    const SENDER_NAME = 'Cremson Publications';
+    const SENDER_NAME = "Cremson Publications";
     const ADMIN_EMAIL = "Info@cremsonpublications.com";
-    
+
     // Check if API key is configured
-    if (!BREVO_API_KEY) {
-      console.warn('VITE_BREVO_API_KEY is not configured in environment variables');
-      return { success: false, message: 'Email service not configured' };
+    if (!VITE_BREVO_API_KEY) {
+      console.warn(
+        "VITE_BREVO_API_KEY is not configured in environment variables"
+      );
+      return { success: false, message: "Email service not configured" };
     }
-    
+
     // Create HTML email template for order update
     const htmlContent = `
       <!DOCTYPE html>
@@ -54,17 +56,35 @@ export const sendOrderUpdateEmail = async (orderData) => {
               </p>
             </div>
 
-            ${orderData.trackingId ? `
+            ${
+              orderData.trackingId
+                ? `
             <div class="tracking">
               <h3 style="color: #856404; margin: 0;">📦 Tracking Information</h3>
               <p style="margin: 10px 0 0 0; color: #856404;">
                 <strong>Tracking ID:</strong> ${orderData.trackingId}<br>
-                ${orderData.courier ? `<strong>Courier:</strong> ${orderData.courier}<br>` : ''}
-                ${orderData.trackingUrl ? `<strong>Track Package:</strong> <a href="${orderData.trackingUrl}" target="_blank">Click here to track</a><br>` : ''}
-                ${orderData.expectedDate ? `<strong>Expected Delivery:</strong> ${new Date(orderData.expectedDate).toLocaleDateString()}` : ''}
+                ${
+                  orderData.courier
+                    ? `<strong>Courier:</strong> ${orderData.courier}<br>`
+                    : ""
+                }
+                ${
+                  orderData.trackingUrl
+                    ? `<strong>Track Package:</strong> <a href="${orderData.trackingUrl}" target="_blank">Click here to track</a><br>`
+                    : ""
+                }
+                ${
+                  orderData.expectedDate
+                    ? `<strong>Expected Delivery:</strong> ${new Date(
+                        orderData.expectedDate
+                      ).toLocaleDateString()}`
+                    : ""
+                }
               </p>
             </div>
-            ` : ''}
+            `
+                : ""
+            }
             
             <h2>Order Details</h2>
             <div class="order-details">
@@ -72,12 +92,16 @@ export const sendOrderUpdateEmail = async (orderData) => {
               <p><strong>Order Date:</strong> ${orderData.orderDate}</p>
               
               <h3>Items Ordered:</h3>
-              ${orderData.items.map(item => `
+              ${orderData.items
+                .map(
+                  (item) => `
                 <div class="item">
                   <span>${item.name} (Qty: ${item.quantity})</span>
                   <span>₹${item.totalPrice}</span>
                 </div>
-              `).join('')}
+              `
+                )
+                .join("")}
               
               <div class="item total">
                 <span>Total Amount:</span>
@@ -89,7 +113,9 @@ export const sendOrderUpdateEmail = async (orderData) => {
             <div class="address">
               <strong>${orderData.shippingAddress.name}</strong><br>
               ${orderData.shippingAddress.street}<br>
-              ${orderData.shippingAddress.city}, ${orderData.shippingAddress.state} - ${orderData.shippingAddress.pincode}<br>
+              ${orderData.shippingAddress.city}, ${
+      orderData.shippingAddress.state
+    } - ${orderData.shippingAddress.pincode}<br>
               Phone: ${orderData.shippingAddress.phone}
             </div>
             
@@ -111,18 +137,18 @@ export const sendOrderUpdateEmail = async (orderData) => {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        "accept": "application/json",
-        "api-key": BREVO_API_KEY,
+        accept: "application/json",
+        "api-key": VITE_BREVO_API_KEY,
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        sender: { 
-          name: SENDER_NAME, 
-          email: SENDER_EMAIL 
+        sender: {
+          name: SENDER_NAME,
+          email: SENDER_EMAIL,
         },
         to: [
           { email: orderData.customerEmail, name: orderData.customerName },
-          { email: ADMIN_EMAIL, name: "Cremson Publications Admin" }
+          { email: ADMIN_EMAIL, name: "Cremson Publications Admin" },
         ],
         subject: `Order Update #${orderData.orderId} - ${orderData.deliveryStatus} - Cremson Publications`,
         htmlContent: htmlContent,
@@ -132,14 +158,17 @@ export const sendOrderUpdateEmail = async (orderData) => {
     const data = await response.json();
 
     if (response.ok) {
-      console.log('Order update email sent successfully:', data);
+      console.log("Order update email sent successfully:", data);
       return { success: true, data };
     } else {
-      console.error('Error sending order update email:', data);
-      return { success: false, error: data.error || 'Failed to send order update email' };
+      console.error("Error sending order update email:", data);
+      return {
+        success: false,
+        error: data.error || "Failed to send order update email",
+      };
     }
   } catch (error) {
-    console.error('Order update email service error:', error);
+    console.error("Order update email service error:", error);
     return { success: false, error: error.message };
   }
 };
