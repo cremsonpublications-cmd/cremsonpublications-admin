@@ -208,10 +208,6 @@ export default function AdminProductsSimple() {
       toast.error("Please enter a product name!");
       return;
     }
-    if (!formData.mrp || formData.mrp <= 0) {
-      toast.error("Please enter a valid MRP!");
-      return;
-    }
 
     setLoading(true);
     try {
@@ -223,7 +219,7 @@ export default function AdminProductsSimple() {
         sub_categories:
           formData.sub_categories.length > 0 ? formData.sub_categories : null,
         classes: formData.classes.length > 0 ? formData.classes : null,
-        mrp: parseFloat(formData.mrp),
+        mrp: formData.mrp ? parseFloat(formData.mrp) : null,
         status: formData.status,
         author: formData.author.trim() || null,
         isbn: formData.isbn.trim() || null,
@@ -1054,7 +1050,7 @@ export default function AdminProductsSimple() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    MRP <span className="text-red-500">*</span>
+                    MRP (Optional)
                   </label>
                   <input
                     type="number"
@@ -1066,7 +1062,6 @@ export default function AdminProductsSimple() {
                     }
                     placeholder="Enter MRP"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
-                    required
                   />
                 </div>
 
@@ -1404,12 +1399,10 @@ export default function AdminProductsSimple() {
                   type="submit"
                   disabled={
                     loading ||
-                    !formData.name.trim() ||
-                    !formData.category_id ||
-                    !formData.mrp
+                    !formData.name.trim()
                   }
                   className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                    formData.name.trim() && formData.category_id && formData.mrp
+                    formData.name.trim()
                       ? "bg-blue-600 hover:bg-blue-700 text-white"
                       : "bg-gray-400 text-white cursor-not-allowed"
                   }`}
