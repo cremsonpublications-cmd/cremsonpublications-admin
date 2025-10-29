@@ -56,13 +56,11 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
       yearlyTotals[year] = 0;
     });
 
-    // Process orders to calculate revenue - only count orders with delivery status "Shipped" or "Delivered"
+    // Process orders to calculate revenue - only count orders with payment status "Paid"
     revenueOrders.forEach(order => {
-      const isShippedOrDelivered =
-        order.delivery?.status === "Shipped" ||
-        order.delivery?.status === "Delivered";
+      const isPaid = order.payment?.status === "Paid";
 
-      if (order.created_at && order.order_summary?.grandTotal && isShippedOrDelivered) {
+      if (order.created_at && order.order_summary?.grandTotal && isPaid) {
         const orderDate = new Date(order.created_at);
         const year = orderDate.getFullYear();
         const month = orderDate.getMonth(); // 0-11
@@ -107,6 +105,14 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
+    console.log("Current date info:", {
+      now: now,
+      today: today,
+      currentMonth: currentMonth,
+      currentYear: currentYear
+    });
+
+
     // Calculate week start (Monday)
     const weekStart = new Date(now);
     const day = weekStart.getDay();
@@ -117,31 +123,58 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
     let weekRevenue = 0;
     let monthRevenue = 0;
 
-    revenueOrders.forEach(order => {
-      // Only count revenue from orders with delivery status "Shipped" or "Delivered"
-      const isShippedOrDelivered =
-        order.delivery?.status === "Shipped" ||
-        order.delivery?.status === "Delivered";
+    console.log("Total orders to process:", revenueOrders.length);
 
-      if (order.created_at && order.order_summary?.grandTotal && isShippedOrDelivered) {
+    revenueOrders.forEach((order, index) => {
+      // Only count revenue from orders with payment status "Paid"
+      const isPaid = order.payment?.status === "Paid";
+
+      console.log(`Order ${index + 1}:`, {
+        id: order.id,
+        created_at: order.created_at,
+        grandTotal: order.order_summary?.grandTotal,
+        paymentStatus: order.payment?.status,
+        isPaid: isPaid
+      });
+
+      if (order.created_at && order.order_summary?.grandTotal && isPaid) {
         const orderDate = new Date(order.created_at);
         const revenue = order.order_summary.grandTotal;
+
+        console.log(`Paid order ${index + 1} details:`, {
+          orderDate: orderDate.toDateString(),
+          revenue: revenue,
+          year: orderDate.getFullYear(),
+          month: orderDate.getMonth(),
+          isToday: orderDate.toDateString() === today,
+          isThisWeek: orderDate >= weekStart && orderDate <= now,
+          isThisMonth: orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear
+        });
 
         // Today's revenue
         if (orderDate.toDateString() === today) {
           todayRevenue += revenue;
+          console.log(`Added ₹${revenue} to today's revenue. Total now: ₹${todayRevenue}`);
         }
 
         // This week's revenue
         if (orderDate >= weekStart && orderDate <= now) {
           weekRevenue += revenue;
+          console.log(`Added ₹${revenue} to week's revenue. Total now: ₹${weekRevenue}`);
         }
 
         // This month's revenue
         if (orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear) {
           monthRevenue += revenue;
+          console.log(`Added ₹${revenue} to month's revenue. Total now: ₹${monthRevenue}`);
         }
       }
+    });
+
+    console.log("Final totals:", {
+      todayRevenue,
+      weekRevenue,
+      monthRevenue
     });
 
     return { todayRevenue, weekRevenue, monthRevenue };
@@ -189,7 +222,7 @@ const RevenueAnalysis = ({ onBackToDashboard }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mt-4 lg:mt-0">
-          Revenue Analysis (Shipped/Delivered Orders)
+          Revenue Analysis (Paid Orders Only)
         </h1>
       </div>
 
